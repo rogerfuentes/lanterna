@@ -1,0 +1,19 @@
+{
+  "name": "lanterna-expo-devtools-plugin",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@lanterna/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "expo": ">=50.0.0"
+  },
+  "peerDependenciesMeta": {
+    "expo": { "optional": true }
+  },
+  "scripts": {
+    "test": "bun test"
+  }
+}

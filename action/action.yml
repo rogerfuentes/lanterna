@@ -1,0 +1,93 @@
+name: 'Lanterna Performance Check'
+description: 'Run Lanterna performance profiling on your React Native app'
+branding:
+  icon: 'activity'
+  color: 'orange'
+
+inputs:
+  package:
+    description: 'App package name / bundle ID'
+    required: true
+  duration:
+    description: 'Measurement duration in seconds'
+    default: '10'
+  platform:
+    description: 'Target platform (ios or android)'
+    required: false
+  baseline-artifact:
+    description: 'Name of the artifact storing the baseline report'
+    default: 'lanterna-baseline'
+  score-threshold:
+    description: 'Minimum score to pass (0-100)'
+    default: '40'
+  comment:
+    description: 'Post results as PR comment (true/false)'
+    default: 'true'
+
+outputs:
+  score:
+    description: 'Overall performance score (0-100)'
+    value: ${{ steps.measure.outputs.score }}
+  category:
+    description: 'Score category (good, needs_work, poor)'
+    value: ${{ steps.measure.outputs.category }}
+  report-path:
+    description: 'Path to the JSON report'
+    value: ${{ steps.measure.outputs.report_path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Install Lanterna
+      shell: bash
+      run: bun add -g @lanterna/cli
+
+    - name: Download baseline
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.baseline-artifact }}
+        path: .lanterna-baseline
+      continue-on-error: true
+
+    - name: Run measurement
+      id: measure
+      shell: bash
+      run: |
+        ARGS="measure ${{ inputs.package }} --duration ${{ inputs.duration }} --output .lanterna-report.json"
+        if [ "${{ inputs.platform }}" != "" ]; then
+          ARGS="$ARGS --platform ${{ inputs.platform }}"
+        fi
+        if [ -f ".lanterna-baseline/report.json" ]; then
+          ARGS="$ARGS --baseline .lanterna-baseline/report.json"
+        fi
+        lanterna $ARGS || true
+
+        if [ -f ".lanterna-report.json" ]; then
+          SCORE=$(jq -r '.score.overall' .lanterna-report.json)
+          CATEGORY=$(jq -r '.score.category' .lanterna-report.json)
+          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "category=$CATEGORY" >> $GITHUB_OUTPUT
+          echo "report_path=.lanterna-report.json" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Upload baseline artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.baseline-artifact }}
+        path: .lanterna-report.json
+        overwrite: true
+
+    - name: Check score threshold
+      shell: bash
+      run: |
+        SCORE="${{ steps.measure.outputs.score }}"
+        THRESHOLD="${{ inputs.score-threshold }}"
+        if [ -n "$SCORE" ] && [ "$SCORE" -lt "$THRESHOLD" ]; then
+          echo "::error::Performance score ($SCORE) is below threshold ($THRESHOLD)"
+          exit 1
+        fi

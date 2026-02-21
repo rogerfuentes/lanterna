@@ -1,0 +1,235 @@
+import type { MetricSnapshot } from "./collector";
+import {
+	createDisconnect,
+	createHandshake,
+	createMetricsMessage,
+	DEFAULT_INTERVAL_MS,
+	DEFAULT_PORT,
+	type HandshakeAckMessage,
+	type LanternaMessage,
+	parseMessage,
+	serializeMessage,
+} from "./protocol";
+
+/** WebSocket client configuration. */
+export interface WsClientConfig {
+	/** Server host (default: "localhost"). */
+	host: string;
+	/** Server port (default: 8347). */
+	port: number;
+	/** Auto-reconnect on disconnect (default: true). */
+	autoReconnect: boolean;
+	/** Reconnect delay in ms (default: 3000). */
+	reconnectDelayMs: number;
+	/** Maximum reconnect attempts (default: 10). */
+	maxReconnectAttempts: number;
+}
+
+/** Client connection state. */
+export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting";
+
+/** Listener for client events. */
+export type ClientEventListener = (event: ClientEvent) => void;
+
+/** Client events. */
+export type ClientEvent =
+	| { type: "connected"; sessionId: string }
+	| { type: "disconnected"; reason: string }
+	| { type: "error"; message: string }
+	| { type: "control"; action: string }
+	| { type: "stateChange"; state: ConnectionState };
+
+const DEFAULT_CLIENT_CONFIG: WsClientConfig = {
+	host: "localhost",
+	port: DEFAULT_PORT,
+	autoReconnect: true,
+	reconnectDelayMs: 3000,
+	maxReconnectAttempts: 10,
+};
+
+/**
+ * WebSocket client for streaming metrics from the in-app module to the CLI.
+ *
+ * Handles connection lifecycle, handshake protocol, auto-reconnection,
+ * and metric snapshot serialization.
+ */
+export class LanternaWsClient {
+	readonly config: WsClientConfig;
+	private state: ConnectionState = "disconnected";
+	private sessionId: string | null = null;
+	private reconnectAttempts = 0;
+	private listeners = new Set<ClientEventListener>();
+	private intervalMs = DEFAULT_INTERVAL_MS;
+
+	// App info for handshake
+	private appId: string;
+	private platform: "ios" | "android";
+	private deviceName: string;
+
+	constructor(
+		appId: string,
+		platform: "ios" | "android",
+		deviceName: string,
+		config: Partial<WsClientConfig> = {},
+	) {
+		this.config = { ...DEFAULT_CLIENT_CONFIG, ...config };
+		this.appId = appId;
+		this.platform = platform;
+		this.deviceName = deviceName;
+	}
+
+	/** Current connection state. */
+	get connectionState(): ConnectionState {
+		return this.state;
+	}
+
+	/** Current session ID (set after handshake). */
+	get currentSessionId(): string | null {
+		return this.sessionId;
+	}
+
+	/** Configured streaming interval. */
+	get streamingIntervalMs(): number {
+		return this.intervalMs;
+	}
+
+	/**
+	 * Create the handshake message for this client.
+	 */
+	createHandshakeMessage(): string {
+		const msg = createHandshake(this.appId, this.platform, this.deviceName);
+		return serializeMessage(msg);
+	}
+
+	/**
+	 * Process a received message from the server.
+	 * Returns true if the message was handled.
+	 */
+	handleMessage(data: string): boolean {
+		const message = parseMessage(data);
+		if (!message) return false;
+
+		switch (message.type) {
+			case "handshake_ack":
+				return this.handleHandshakeAck(message as HandshakeAckMessage);
+			case "control":
+				this.emit({
+					type: "control",
+					action: (message as LanternaMessage & { action: string }).action,
+				});
+				return true;
+			case "disconnect":
+				this.handleDisconnect((message as LanternaMessage & { reason: string }).reason);
+				return true;
+			case "error":
+				this.emit({
+					type: "error",
+					message: (message as LanternaMessage & { message: string }).message,
+				});
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	/**
+	 * Serialize a metric snapshot for sending to the server.
+	 */
+	serializeSnapshot(snapshot: MetricSnapshot): string {
+		const metrics: Record<string, number> = {};
+		for (const sample of snapshot.samples) {
+			metrics[sample.type] = sample.value;
+		}
+
+		const fps = snapshot.fps
+			? { ui: snapshot.fps.fps, js: 0, droppedFrames: snapshot.fps.droppedFrames }
+			: undefined;
+
+		const msg = createMetricsMessage(this.sessionId ?? "unknown", metrics, fps);
+		return serializeMessage(msg);
+	}
+
+	/**
+	 * Create a disconnect message.
+	 */
+	createDisconnectMessage(reason: string): string {
+		return serializeMessage(createDisconnect(reason));
+	}
+
+	/**
+	 * Simulate a connection (for testing without real WebSocket).
+	 */
+	simulateConnect(): void {
+		this.setState("connecting");
+	}
+
+	/**
+	 * Simulate connection established.
+	 */
+	simulateConnected(sessionId: string): void {
+		this.sessionId = sessionId;
+		this.reconnectAttempts = 0;
+		this.setState("connected");
+		this.emit({ type: "connected", sessionId });
+	}
+
+	/**
+	 * Simulate disconnect.
+	 */
+	simulateDisconnect(reason: string): void {
+		this.handleDisconnect(reason);
+	}
+
+	/**
+	 * Check if reconnect should be attempted.
+	 */
+	shouldReconnect(): boolean {
+		return this.config.autoReconnect && this.reconnectAttempts < this.config.maxReconnectAttempts;
+	}
+
+	/**
+	 * Increment reconnect attempt counter.
+	 */
+	attemptReconnect(): void {
+		this.reconnectAttempts++;
+		this.setState("reconnecting");
+	}
+
+	/** Subscribe to client events. Returns unsubscribe function. */
+	on(listener: ClientEventListener): () => void {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
+	}
+
+	/** Remove all listeners. */
+	removeAllListeners(): void {
+		this.listeners.clear();
+	}
+
+	private handleHandshakeAck(message: HandshakeAckMessage): boolean {
+		this.sessionId = message.sessionId;
+		this.intervalMs = message.config.intervalMs;
+		this.reconnectAttempts = 0;
+		this.setState("connected");
+		this.emit({ type: "connected", sessionId: message.sessionId });
+		return true;
+	}
+
+	private handleDisconnect(reason: string): void {
+		this.sessionId = null;
+		this.setState("disconnected");
+		this.emit({ type: "disconnected", reason });
+	}
+
+	private setState(newState: ConnectionState): void {
+		if (this.state === newState) return;
+		this.state = newState;
+		this.emit({ type: "stateChange", state: newState });
+	}
+
+	private emit(event: ClientEvent): void {
+		for (const listener of this.listeners) {
+			listener(event);
+		}
+	}
+}

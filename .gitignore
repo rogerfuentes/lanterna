@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Trace files
+*.trace
+*.pb
+
+# Debug logs
+firebase-debug.log
+
+.claude/specs/
+.claude/plans/
+.claude/worktrees/
+docs/*.md
+QUICK_TEST.md

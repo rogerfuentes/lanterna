@@ -1,0 +1,10 @@
+{
+  "enabledPlugins": {
+    "context-driven-development@cdd": true
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y ccstatusline@1.0.1",
+    "padding": 0
+  }
+}

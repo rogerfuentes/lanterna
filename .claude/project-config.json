@@ -1,0 +1,24 @@
+{
+  "packageManager": "bun",
+  "projectType": "cli-tool",
+  "validationGates": {
+    "typescript": {
+      "enabled": true,
+      "command": "bun run typecheck",
+      "exitOnError": true
+    },
+    "lint": {
+      "enabled": true,
+      "command": "bun run lint",
+      "autoFix": true,
+      "fixCommand": "bun run lint:fix",
+      "exitOnError": true
+    },
+    "unitTests": {
+      "enabled": true,
+      "command": "bun test",
+      "smartFileSelection": true,
+      "exitOnError": false
+    }
+  }
+}
