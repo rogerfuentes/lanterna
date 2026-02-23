@@ -23,5 +23,7 @@ jobs:
       - run: bun test
       - name: Version packages
         run: bunx changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish to npm
         run: NODE_AUTH_TOKEN="" npm publish --workspaces --access public --provenance
