@@ -1,0 +1,29 @@
+appId: com.lanterna.demo
+---
+# Feed scroll flow — open feed and scroll through items.
+
+- launchApp
+
+# Navigate to Feed tab
+- tapOn:
+    point: "30%,93%"
+- waitForAnimationToEnd
+- assertVisible: "Jordan Lee"
+
+# Scroll down through the feed multiple times
+- scroll
+- scroll
+- scroll
+- scroll
+- scroll
+
+# Scroll back up
+- swipe:
+    direction: UP
+- swipe:
+    direction: UP
+
+# Scroll down again
+- scroll
+- scroll
+- scroll

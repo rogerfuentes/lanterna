@@ -1,0 +1,21 @@
+appId: com.lanterna.demo
+---
+# Profile load flow — open profile, wait for slow API waterfall.
+
+- launchApp
+
+# Navigate to Profile tab
+- tapOn:
+    point: "50%,93%"
+
+# Wait for the sequential API calls to complete
+- extendedWaitUntil:
+    visible: "Followers"
+    timeout: 20000
+
+# Verify all data loaded
+- assertVisible: "Recent Posts"
+
+# Scroll to see all content
+- scroll
+- scroll
