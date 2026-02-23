@@ -9,7 +9,7 @@
   "description": "Scoring engine, types, and metric normalization for Lanterna",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/lanterna.git",
+    "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/core"
   },
   "publishConfig": { "access": "public" },

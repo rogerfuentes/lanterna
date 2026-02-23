@@ -12,7 +12,7 @@
   "description": "CLI entry point for Lanterna — Lighthouse for mobile apps",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/lanterna.git",
+    "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/cli"
   },
   "publishConfig": { "access": "public" },

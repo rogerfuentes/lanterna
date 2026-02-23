@@ -9,7 +9,7 @@
   "description": "Terminal and HTML report output for Lanterna",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/lanterna.git",
+    "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/report"
   },
   "publishConfig": { "access": "public" },
