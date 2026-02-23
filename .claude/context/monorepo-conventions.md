@@ -6,10 +6,11 @@ Bun workspace patterns and TypeScript configuration for this monorepo.
 ## Patterns
 
 ### TypeScript
-- `noEmit: true` — TypeScript is for type checking only, Bun runs `.ts` directly
-- No `tsc --build` or project references — Bun resolves `@lanternajs/*` workspace aliases natively
+- Root `tsconfig.json` has `noEmit: true` — used for type-checking only, Bun runs `.ts` directly
+- Each package has `tsconfig.build.json` for compilation to `dist/` (see `context/ci-publish.md`)
 - Root `tsconfig.json` with `paths: { "@lanternajs/*": ["./packages/*/src"] }`
 - Typecheck: `bun run typecheck` (runs `tsc --noEmit`)
+- Build: `bun run build` (runs `tsc --project` sequentially for each package)
 
 ### Imports
 - Cross-package: `import { X } from "@lanternajs/core"` — no `.ts` extensions
@@ -29,6 +30,6 @@ Bun workspace patterns and TypeScript configuration for this monorepo.
 - Need `@types/bun` as devDependency for `Bun.spawn`, `Bun.file`, etc.
 
 ## Anti-patterns
-- Don't use `tsc --build` with `--noEmit` (they conflict)
 - Don't add `.ts` extensions to imports
 - Don't use non-null assertions (`!.`) — Biome flags them, use optional chaining (`?.`)
+- Don't inherit root tsconfig `paths` in build configs — override with `paths: {}`

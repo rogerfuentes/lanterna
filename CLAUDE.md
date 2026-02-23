@@ -83,6 +83,7 @@ Scoring: Weighted 0-100 score across UI FPS (25%), JS FPS (20%), CPU (15%), memo
 | `context/agent-patterns.md` | Launching parallel agents, using worktrees, writing agent prompts |
 | `context/monorepo-conventions.md` | TypeScript config, imports, linting, testing patterns |
 | `context/ssd-lessons.md` | Planning initiative sizing, agent strategy, parallel sessions |
+| `context/ci-publish.md` | Creating PRs (changesets required), npm publishing, build configs, GitHub workflows |
 
 ## Working Agreements
 - Run tests before committing
