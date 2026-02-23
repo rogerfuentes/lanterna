@@ -1,0 +1,5 @@
+{
+  "thresholds": {
+    "tti": { "good": 1.5, "poor": 3 }
+  }
+}

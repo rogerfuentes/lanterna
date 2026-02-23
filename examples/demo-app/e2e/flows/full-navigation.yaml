@@ -1,0 +1,36 @@
+appId: com.lanterna.demo
+---
+# Full navigation flow — visit all 5 tabs in sequence.
+
+- launchApp
+
+# Home tab (default)
+- assertVisible: "Lanterna Demo"
+- assertVisible: "About This App"
+
+# Navigate to Feed tab
+- tapOn:
+    point: "30%,93%"
+- waitForAnimationToEnd
+- assertVisible: "Jordan Lee"
+- scroll
+
+# Navigate to Profile tab
+- tapOn:
+    point: "50%,93%"
+- extendedWaitUntil:
+    visible: "Followers"
+    timeout: 20000
+
+# Navigate to Settings tab
+- tapOn:
+    point: "70%,93%"
+- waitForAnimationToEnd
+- assertVisible: "Push Notifications"
+
+# Navigate to Search tab
+- tapOn:
+    point: "90%,93%"
+- waitForAnimationToEnd
+- assertVisible: "Search anything..."
+- inputText: "react native"
