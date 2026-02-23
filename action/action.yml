@@ -45,7 +45,7 @@ runs:
 
     - name: Install Lanterna
       shell: bash
-      run: bun add -g @lanterna/cli
+      run: bun add -g @lanternajs/cli
 
     - name: Download baseline
       uses: actions/download-artifact@v4

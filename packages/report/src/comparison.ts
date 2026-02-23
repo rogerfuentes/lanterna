@@ -1,4 +1,4 @@
-import type { ComparisonResult, MetricDelta, ScoreResult } from "@lanterna/core";
+import type { ComparisonResult, MetricDelta, ScoreResult } from "@lanternajs/core";
 import { BOLD, colorByCategory, DIM, formatMetricValue, metricLabel, RESET } from "./format";
 
 function deltaArrow(delta: MetricDelta): string {

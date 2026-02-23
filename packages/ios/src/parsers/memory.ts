@@ -1,4 +1,4 @@
-import { type MetricSample, MetricType } from "@lanterna/core";
+import { type MetricSample, MetricType } from "@lanternajs/core";
 
 /**
  * Parse host-side `top -l 1 -pid <pid> -stats pid,rsize` output for memory usage.

@@ -1,4 +1,4 @@
-import type { CommandRunner } from "@lanterna/core";
+import type { CommandRunner } from "@lanternajs/core";
 
 export interface MaestroStep {
 	name: string;

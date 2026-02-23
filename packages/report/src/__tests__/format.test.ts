@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MetricType, ScoreCategory } from "@lanterna/core";
+import { MetricType, ScoreCategory } from "@lanternajs/core";
 import {
 	categoryLabel,
 	colorByCategory,

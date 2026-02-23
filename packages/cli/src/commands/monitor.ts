@@ -28,7 +28,7 @@ export async function runMonitor(args: MonitorArgs): Promise<number> {
 		}
 	});
 
-	server.start();
+	server.startListening();
 	console.log(renderDashboard(server.connectedApps, server.serverPort, true));
 	console.log(`\nWebSocket server listening on ws://localhost:${args.port}`);
 	console.log("Waiting for apps to connect...\n");
@@ -36,7 +36,7 @@ export async function runMonitor(args: MonitorArgs): Promise<number> {
 	// Keep process alive
 	await new Promise<void>((resolve) => {
 		const handler = () => {
-			server.stop();
+			server.stopListening();
 			console.log("\nMonitor stopped.");
 			resolve();
 		};

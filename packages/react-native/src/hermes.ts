@@ -1,5 +1,5 @@
-import type { MetricSample } from "@lanterna/core";
-import { MetricType } from "@lanterna/core";
+import type { MetricSample } from "@lanternajs/core";
+import { MetricType } from "@lanternajs/core";
 
 /** A single sample from the Hermes CPU profiler. */
 export interface HermesSample {

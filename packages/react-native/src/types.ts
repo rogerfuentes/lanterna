@@ -1,4 +1,4 @@
-import type { MetricType } from "@lanterna/core";
+import type { MetricType } from "@lanternajs/core";
 
 /** Configuration for a profiling session. */
 export interface ProfilingConfig {
@@ -68,6 +68,7 @@ export interface NativeLanternaSpec {
 	startProfiling(configJson: string): Promise<string>;
 	stopProfiling(sessionId: string): Promise<string>;
 	getMetrics(sessionId: string): Promise<string>;
+	getFrameTimestamps(): Promise<string>;
 	isProfilingActive(): Promise<boolean>;
 	getActiveSessionId(): Promise<string | null>;
 }

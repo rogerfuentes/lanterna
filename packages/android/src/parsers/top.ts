@@ -1,4 +1,4 @@
-import { type MetricSample, MetricType } from "@lanterna/core";
+import { type MetricSample, MetricType } from "@lanternajs/core";
 
 /**
  * Parse output from `adb shell top -H -d 1 -p <pid>`.

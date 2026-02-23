@@ -1,4 +1,4 @@
-import { collectAndroidMetrics } from "@lanterna/android";
+import { collectAndroidMetrics } from "@lanternajs/android";
 import {
 	type CommandRunner,
 	calculateScore,
@@ -7,9 +7,9 @@ import {
 	defaultRunner,
 	detectDevices,
 	ScoreCategory,
-} from "@lanterna/core";
-import { collectIosMetrics } from "@lanterna/ios";
-import { exportJson, renderComparison, renderReport } from "@lanterna/report";
+} from "@lanternajs/core";
+import { collectIosMetrics } from "@lanternajs/ios";
+import { exportJson, renderComparison, renderReport } from "@lanternajs/report";
 import type { MeasureArgs } from "../args";
 import { Spinner } from "../spinner";
 

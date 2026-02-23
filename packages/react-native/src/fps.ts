@@ -1,5 +1,5 @@
-import type { MetricSample } from "@lanterna/core";
-import { MetricType } from "@lanterna/core";
+import type { MetricSample } from "@lanternajs/core";
+import { MetricType } from "@lanternajs/core";
 
 /** Raw frame timing data from native Choreographer/CADisplayLink. */
 export interface FrameData {
@@ -60,7 +60,7 @@ export function calculateFps(data: FrameData): FpsResult {
 }
 
 /**
- * Convert FPS result into MetricSamples compatible with @lanterna/core scoring.
+ * Convert FPS result into MetricSamples compatible with @lanternajs/core scoring.
  */
 export function fpsToSamples(result: FpsResult, timestamp: number): MetricSample[] {
 	const samples: MetricSample[] = [];

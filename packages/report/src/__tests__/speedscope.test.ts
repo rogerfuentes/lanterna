@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type MeasurementSession, MetricType } from "@lanterna/core";
+import { type MeasurementSession, MetricType } from "@lanternajs/core";
 import { formatSpeedScopeProfile } from "../speedscope";
 
 function makeSession(overrides?: Partial<MeasurementSession>): MeasurementSession {

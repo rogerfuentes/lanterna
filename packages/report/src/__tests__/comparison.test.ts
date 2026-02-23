@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { MetricScore, ScoreResult } from "@lanterna/core";
-import { compareScores, MetricType, ScoreCategory } from "@lanterna/core";
+import type { MetricScore, ScoreResult } from "@lanternajs/core";
+import { compareScores, MetricType, ScoreCategory } from "@lanternajs/core";
 import { renderComparison } from "../comparison";
 
 function makeScore(

@@ -7,7 +7,7 @@ import type {
 	NetworkRequestData,
 	ScoreCategory,
 	ScoreResult,
-} from "@lanterna/core";
+} from "@lanternajs/core";
 import { categoryLabel, formatMetricValue, metricLabel } from "./format";
 
 function escapeHtml(str: string): string {

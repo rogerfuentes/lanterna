@@ -73,6 +73,12 @@ export {
 	serializeMessage,
 } from "./protocol";
 export {
+	type LanternaInstances,
+	LanternaProvider,
+	type LanternaProviderProps,
+	useLanterna,
+} from "./provider";
+export {
 	DEFAULT_CONFIG,
 	type ErrorEventPayload,
 	type LanternaEventMap,

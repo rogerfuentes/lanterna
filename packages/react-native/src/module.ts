@@ -159,6 +159,9 @@ export function createMockNativeModule(
 				metrics: { ui_fps: 60, js_fps: 58, cpu: 25, memory: 180 },
 			} satisfies MetricsEventPayload);
 		},
+		async getFrameTimestamps(): Promise<string> {
+			return JSON.stringify([]);
+		},
 		async isProfilingActive(): Promise<boolean> {
 			return active;
 		},

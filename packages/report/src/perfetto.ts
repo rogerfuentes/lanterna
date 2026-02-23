@@ -1,5 +1,5 @@
-import type { MeasurementSession, MetricSample } from "@lanterna/core";
-import { MetricType } from "@lanterna/core";
+import type { MeasurementSession, MetricSample } from "@lanternajs/core";
+import { MetricType } from "@lanternajs/core";
 
 export interface PerfettoTraceEvent {
 	name: string;

@@ -1,4 +1,4 @@
-import type { CommandRunner, Device, MeasurementSession } from "@lanterna/core";
+import type { CommandRunner, Device, MeasurementSession } from "@lanternajs/core";
 import { parseTopMemory } from "./parsers/memory";
 import { parseXctraceXml } from "./parsers/xctrace-xml";
 import { findIosPid } from "./process";

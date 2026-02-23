@@ -1,4 +1,4 @@
-import type { CommandRunner, Device, MeasurementSession, MetricSample } from "@lanterna/core";
+import type { CommandRunner, Device, MeasurementSession, MetricSample } from "@lanternajs/core";
 import { parseGfxinfoOutput } from "./parsers/gfxinfo";
 import { parseMeminfoOutput } from "./parsers/meminfo";
 import { parseTopOutput } from "./parsers/top";

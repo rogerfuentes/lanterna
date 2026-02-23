@@ -54,8 +54,8 @@ describe("applyAndroidPlugin", () => {
 describe("applyIosPlugin", () => {
 	test("adds pod line after use_react_native", () => {
 		const result = applyIosPlugin(SAMPLE_PODFILE);
-		expect(result).toContain("pod 'lanterna-react-native'");
-		expect(result).toContain(":path => '../node_modules/lanterna-react-native'");
+		expect(result).toContain("pod '@lanternajs/react-native'");
+		expect(result).toContain(":path => '../node_modules/@lanternajs/react-native'");
 	});
 
 	test("idempotent — does not duplicate if already present", () => {

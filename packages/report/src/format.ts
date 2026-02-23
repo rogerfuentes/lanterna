@@ -1,4 +1,4 @@
-import { MetricType, ScoreCategory } from "@lanterna/core";
+import { MetricType, ScoreCategory } from "@lanternajs/core";
 
 export const RESET = "\x1b[0m";
 export const BOLD = "\x1b[1m";

@@ -39,14 +39,14 @@ Run the CLI: `bun run packages/cli/src/index.ts`
 
 ```
 packages/
-  core/     → @lanterna/core     (scoring engine, types, metric normalization — no internal deps)
-  android/  → @lanterna/android  (adb + perfetto data collection → depends on core)
-  ios/      → @lanterna/ios      (xctrace data collection → depends on core)
-  report/   → @lanterna/report   (terminal + HTML output → depends on core)
-  cli/      → @lanterna/cli      (main entry point → depends on all packages)
+  core/     → @lanternajs/core     (scoring engine, types, metric normalization — no internal deps)
+  android/  → @lanternajs/android  (adb + perfetto data collection → depends on core)
+  ios/      → @lanternajs/ios      (xctrace data collection → depends on core)
+  report/   → @lanternajs/report   (terminal + HTML output → depends on core)
+  cli/      → @lanternajs/cli      (main entry point → depends on all packages)
 ```
 
-Cross-package imports use `@lanterna/*` workspace aliases resolved by Bun natively.
+Cross-package imports use `@lanternajs/*` workspace aliases resolved by Bun natively.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ Three-tier data collection model:
 1. **Tier 1 (External, zero-config)**: Collects metrics via platform CLIs without app modifications
    - Android: `adb shell top`, `dumpsys meminfo`, `dumpsys gfxinfo`, `perfetto`
    - iOS: `xcrun xctrace record` + `xcrun xctrace export` (outputs XML)
-2. **Tier 2 (In-app module)**: `lanterna-react-native` package for real-time FPS, Hermes profiling, React Profiler bridge
+2. **Tier 2 (In-app module)**: `@lanternajs/react-native` package for real-time FPS, Hermes profiling, React Profiler bridge
 3. **Tier 3 (Deep instrumentation)**: Hermes CPU profiles, network waterfall, bridge/JSI call tracking
 
 Scoring: Weighted 0-100 score across UI FPS (25%), JS FPS (20%), CPU (15%), memory (15%), frame drops (15%), TTI (10%). Thresholds configurable via `.lanternarc`.

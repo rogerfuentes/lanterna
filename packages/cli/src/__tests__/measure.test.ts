@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CommandRunner } from "@lanterna/core";
+import type { CommandRunner } from "@lanternajs/core";
 import type { MeasureArgs } from "../args";
 import { runMeasure } from "../commands/measure";
 

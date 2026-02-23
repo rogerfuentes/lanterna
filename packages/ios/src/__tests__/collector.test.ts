@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { CommandRunner, Device } from "@lanterna/core";
+import type { CommandRunner, Device } from "@lanternajs/core";
 import { findIosPid } from "../process";
 import { getXcodeVersion } from "../xcode-version";
 
@@ -245,7 +245,11 @@ describe("collectIosMetrics", () => {
 			invokedCommands.push(key);
 
 			if (cmd === "xcrun" && args.includes("launchctl")) {
-				return { stdout: "12345\t0\tUIKitApplication:com.example.app[xx]\n", stderr: "", exitCode: 0 };
+				return {
+					stdout: "12345\t0\tUIKitApplication:com.example.app[xx]\n",
+					stderr: "",
+					exitCode: 0,
+				};
 			}
 			if (cmd === "pgrep") {
 				return { stdout: "12345\n", stderr: "", exitCode: 0 };

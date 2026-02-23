@@ -1,4 +1,4 @@
-import type { MeasurementSession, ScoreResult } from "@lanterna/core";
+import type { MeasurementSession, ScoreResult } from "@lanternajs/core";
 import {
 	BOLD,
 	categoryLabel,

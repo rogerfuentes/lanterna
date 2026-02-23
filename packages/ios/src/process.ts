@@ -1,4 +1,4 @@
-import type { CommandRunner } from "@lanterna/core";
+import type { CommandRunner } from "@lanternajs/core";
 
 /**
  * Find the PID of a running iOS app by bundle identifier.

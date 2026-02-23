@@ -7,9 +7,10 @@
     "noEmit": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
     "skipLibCheck": true,
     "paths": {
-      "@lanterna/*": ["./packages/*/src"]
+      "@lanternajs/*": ["./packages/*/src"]
     }
   },
   "include": ["packages/*/src", "packages/react-native/plugin/src"]

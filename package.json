@@ -1,8 +1,9 @@
 {
   "name": "lanterna",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "examples/*"],
   "scripts": {
+    "build": "tsc --project packages/core/tsconfig.build.json && tsc --project packages/android/tsconfig.build.json && tsc --project packages/ios/tsconfig.build.json && tsc --project packages/report/tsconfig.build.json && tsc --project packages/cli/tsconfig.build.json && tsc --project packages/react-native/tsconfig.build.json && tsc --project packages/expo-devtools-plugin/tsconfig.build.json",
     "test": "bun test",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

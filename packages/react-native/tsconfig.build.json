@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "jsx": "react-jsx",
+    "paths": {}
+  },
+  "include": ["src", "plugin/src"],
+  "exclude": ["src/**/*.test.ts", "src/**/__tests__"]
+}

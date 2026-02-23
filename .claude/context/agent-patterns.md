@@ -14,7 +14,7 @@ How we use Claude Code agents effectively for parallel work in this monorepo.
 
 ### Agent Prompts
 - Include full type definitions in the prompt (agents can't browse other packages)
-- Specify exact import paths: `import { X } from "@lanterna/core"`
+- Specify exact import paths: `import { X } from "@lanternajs/core"`
 - Specify formatting rules: tabs, 100 char width
 - Tell agents which files they can/cannot modify
 - Include fixture data examples for parsers
