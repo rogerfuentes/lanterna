@@ -9,7 +9,7 @@
   "description": "Expo DevTools plugin for Lanterna performance monitoring",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/lanterna.git",
+    "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/expo-devtools-plugin"
   },
   "publishConfig": { "access": "public" },

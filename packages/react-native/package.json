@@ -9,7 +9,7 @@
   "description": "React Native in-app performance module for Lanterna",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicepkg/lanterna.git",
+    "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/react-native"
   },
   "publishConfig": {
