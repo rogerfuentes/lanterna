@@ -5,7 +5,7 @@ import {
 	MetricType,
 	ScoreCategory,
 	type ScoreResult,
-} from "@lanterna/core";
+} from "@lanternajs/core";
 import { formatMarkdownReport } from "../markdown";
 
 function makeScore(

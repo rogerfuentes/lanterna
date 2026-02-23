@@ -4,7 +4,7 @@ import {
 	MetricType,
 	ScoreCategory,
 	type ScoreResult,
-} from "@lanterna/core";
+} from "@lanternajs/core";
 import { renderReport } from "../terminal";
 
 function makeSession(overrides?: Partial<MeasurementSession>): MeasurementSession {

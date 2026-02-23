@@ -39,7 +39,7 @@ lanterna measure com.example.app
 
 ```bash
 # Install
-bun add -g @lanterna/cli
+bun add -g @lanternajs/cli
 
 # Measure a running app
 lanterna measure com.example.app
@@ -95,7 +95,7 @@ lanterna test --maestro flows/checkout.yaml --duration 30 --platform android
 
 ### `lanterna monitor`
 
-Live performance dashboard via WebSocket. Connects to apps instrumented with `lanterna-react-native`.
+Live performance dashboard via WebSocket. Connects to apps instrumented with `@lanternajs/react-native`.
 
 ```bash
 lanterna monitor
@@ -156,14 +156,14 @@ No app modifications needed. Works on any running app.
 
 ### Tier 2: In-App Module
 
-Install `lanterna-react-native` for real-time data.
+Install `@lanternajs/react-native` for real-time data.
 
 ```bash
-npm install lanterna-react-native
+npm install @lanternajs/react-native
 ```
 
 ```typescript
-import { LanternaModule } from 'lanterna-react-native';
+import { LanternaModule } from '@lanternajs/react-native';
 
 // Start profiling
 await LanternaModule.startProfiling({ fps: true, hermes: true });
@@ -180,7 +180,7 @@ const session = await LanternaModule.stopProfiling();
 Per-screen metrics with React Navigation or Expo Router:
 
 ```typescript
-import { NavigationTracker, createNavigationHandler } from 'lanterna-react-native';
+import { NavigationTracker, createNavigationHandler } from '@lanternajs/react-native';
 
 const tracker = new NavigationTracker();
 
@@ -254,11 +254,11 @@ The action posts a formatted comment on your PR with the score, metrics, and com
 For Expo projects, install the dev tools plugin for a browser-based dashboard:
 
 ```bash
-npx expo install lanterna-expo-devtools-plugin
+npx expo install @lanternajs/expo-devtools-plugin
 ```
 
 ```typescript
-import { useLanternaDevTools } from 'lanterna-expo-devtools-plugin';
+import { useLanternaDevTools } from '@lanternajs/expo-devtools-plugin';
 
 export default function App() {
   useLanternaDevTools(); // auto-connects to Expo dev server
@@ -272,13 +272,13 @@ Press Shift+M in Expo CLI to open the Lanterna dashboard with live FPS graphs, C
 
 | Package | Description |
 |---------|-------------|
-| `@lanterna/cli` | Main CLI entry point |
-| `@lanterna/core` | Scoring engine, types, device detection, heuristics |
-| `@lanterna/android` | ADB-based data collection |
-| `@lanterna/ios` | xctrace-based data collection |
-| `@lanterna/report` | Terminal, HTML, JSON, Markdown, Perfetto, SpeedScope output |
-| `lanterna-react-native` | In-app Turbo Module for Tier 2/3 data |
-| `lanterna-expo-devtools-plugin` | Expo Dev Tools Plugin with browser dashboard |
+| `@lanternajs/cli` | Main CLI entry point |
+| `@lanternajs/core` | Scoring engine, types, device detection, heuristics |
+| `@lanternajs/android` | ADB-based data collection |
+| `@lanternajs/ios` | xctrace-based data collection |
+| `@lanternajs/report` | Terminal, HTML, JSON, Markdown, Perfetto, SpeedScope output |
+| `@lanternajs/react-native` | In-app Turbo Module for Tier 2/3 data |
+| `@lanternajs/expo-devtools-plugin` | Expo Dev Tools Plugin with browser dashboard |
 
 ## Development
 

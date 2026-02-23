@@ -41,7 +41,7 @@ jobs:
 
 ## How it works
 
-1. Installs Bun and `@lanterna/cli` globally
+1. Installs Bun and `@lanternajs/cli` globally
 2. Downloads any existing baseline artifact for comparison
 3. Runs `lanterna measure` against the specified app package
 4. Uploads the report as a baseline artifact for future runs

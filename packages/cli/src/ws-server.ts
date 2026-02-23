@@ -1,5 +1,5 @@
 /**
- * WebSocket server for receiving real-time metrics from lanterna-react-native apps.
+ * WebSocket server for receiving real-time metrics from @lanternajs/react-native apps.
  */
 
 /** Message types from the protocol (duplicated here to avoid dependency on react-native package). */
@@ -66,6 +66,7 @@ export class LanternaServer {
 	private listeners = new Set<ServerEventListener>();
 	private running = false;
 	private port: number;
+	private httpServer: ReturnType<typeof Bun.serve> | null = null;
 
 	constructor(port = WS_DEFAULT_PORT) {
 		this.port = port;
@@ -108,6 +109,44 @@ export class LanternaServer {
 		this.running = false;
 		this.apps.clear();
 		this.emit({ type: "serverStopped" });
+	}
+
+	/**
+	 * Start the server with a real WebSocket listener bound to the port.
+	 * Uses Bun's native WebSocket support — no external library needed.
+	 */
+	startListening(): void {
+		if (this.running) return;
+
+		const server = this;
+
+		this.httpServer = Bun.serve({
+			port: this.port,
+			fetch(req, bunServer) {
+				if (bunServer.upgrade(req, { data: {} })) return undefined;
+				return new Response("Lanterna WebSocket Server", { status: 200 });
+			},
+			websocket: {
+				message(ws, data) {
+					const response = server.handleMessage(String(data));
+					if (response) ws.send(response);
+				},
+				close(_ws) {
+					// App disconnected without sending disconnect message
+				},
+			},
+		});
+
+		this.start();
+	}
+
+	/**
+	 * Stop the server and close the WebSocket listener.
+	 */
+	stopListening(): void {
+		this.httpServer?.stop();
+		this.httpServer = null;
+		this.stop();
 	}
 
 	/**

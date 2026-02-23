@@ -7,7 +7,7 @@
   "commit": false,
   "fixed": [],
   "linked": [
-    ["@lanterna/core", "@lanterna/android", "@lanterna/ios", "@lanterna/report", "@lanterna/cli"]
+    ["@lanternajs/core", "@lanternajs/android", "@lanternajs/ios", "@lanternajs/report", "@lanternajs/cli", "@lanternajs/react-native", "@lanternajs/expo-devtools-plugin"]
   ],
   "access": "public",
   "baseBranch": "main",

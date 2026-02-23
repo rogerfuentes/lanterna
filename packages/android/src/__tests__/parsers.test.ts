@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { type CommandRunner, type Device, MetricType } from "@lanterna/core";
+import { type CommandRunner, type Device, MetricType } from "@lanternajs/core";
 import { collectAndroidMetrics } from "../collector";
 import { parseGfxinfoOutput } from "../parsers/gfxinfo";
 import { parseMeminfoOutput } from "../parsers/meminfo";

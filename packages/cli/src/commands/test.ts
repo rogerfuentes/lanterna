@@ -1,17 +1,21 @@
-import { collectAndroidMetrics } from "@lanterna/android";
+import { collectAndroidMetrics } from "@lanternajs/android";
 import {
+	analyzeSession,
 	type CommandRunner,
 	calculateScore,
 	type Device,
 	defaultRunner,
 	detectDevices,
+	type MetricSample,
+	MetricType,
 	ScoreCategory,
-} from "@lanterna/core";
-import { collectIosMetrics } from "@lanterna/ios";
-import { exportJson, renderReport } from "@lanterna/report";
+} from "@lanternajs/core";
+import { collectIosMetrics } from "@lanternajs/ios";
+import { exportJson, renderReport } from "@lanternajs/report";
 import type { TestArgs } from "../args";
 import { parseMaestroFlow, runMaestro } from "../maestro";
 import { Spinner } from "../spinner";
+import { LanternaServer, WS_DEFAULT_PORT } from "../ws-server";
 
 function selectDevice(devices: Device[], args: TestArgs): Device {
 	if (args.device) {
@@ -81,7 +85,46 @@ export async function runTest(
 		const device = selectDevice(devices, args);
 		spinner.stop(`Device: ${device.name} (${device.platform}, ${device.type})`);
 
-		// 4. Start metric collection and Maestro in parallel
+		// 4. Start WebSocket server for Tier 2 data from in-app module
+		const wsServer = new LanternaServer(WS_DEFAULT_PORT);
+		const tier2Samples: MetricSample[] = [];
+
+		wsServer.on((event) => {
+			if (event.type === "metricsReceived") {
+				const app = wsServer.getApp(event.sessionId);
+				if (!app) return;
+				const now = Date.now();
+
+				if (app.fps) {
+					tier2Samples.push({
+						type: MetricType.UI_FPS,
+						value: app.fps.ui,
+						timestamp: now,
+						unit: "fps",
+					});
+					if (app.fps.droppedFrames > 0) {
+						tier2Samples.push({
+							type: MetricType.FRAME_DROPS,
+							value: app.fps.droppedFrames,
+							timestamp: now,
+							unit: "frames",
+						});
+					}
+				}
+				if (app.memory) {
+					tier2Samples.push({
+						type: MetricType.MEMORY,
+						value: app.memory.usedMb,
+						timestamp: now,
+						unit: "MB",
+					});
+				}
+			}
+		});
+
+		wsServer.startListening();
+
+		// 5. Start metric collection (Tier 1) and Maestro in parallel
 		spinner.start(`Running Maestro flow and collecting metrics on ${device.name}...`);
 
 		const collectMetrics =
@@ -93,16 +136,37 @@ export async function runTest(
 
 		const [session, maestro] = await Promise.all([collectMetrics, maestroResult]);
 
-		spinner.stop(`Collection complete (${session.samples.length} samples)`);
+		// 6. Stop WebSocket server and merge Tier 2 data
+		wsServer.stopListening();
 
-		// 5. Score the session
+		if (tier2Samples.length > 0) {
+			session.samples.push(...tier2Samples);
+		}
+
+		spinner.stop(
+			`Collection complete (${session.samples.length} samples, ${tier2Samples.length} from Tier 2)`,
+		);
+
+		// 7. Score the session
 		const score = calculateScore(session);
 
-		// 6. Render report
+		// 8. Render report
 		const report = renderReport(session, score);
 		console.log(report);
 
-		// 7. Show maestro pass/fail status
+		// 9. Show heuristic recommendations
+		const recommendations = analyzeSession(session, score);
+		if (recommendations.length > 0) {
+			console.log("\nRecommendations:");
+			for (const rec of recommendations) {
+				const icon = rec.severity === "critical" ? "!!" : rec.severity === "warning" ? "!" : "i";
+				console.log(`  [${icon}] ${rec.title}`);
+				console.log(`      ${rec.message}`);
+				if (rec.suggestion) console.log(`      Fix: ${rec.suggestion}`);
+			}
+		}
+
+		// 10. Show maestro pass/fail status
 		const maestroPassed = maestro.exitCode === 0;
 		if (maestroPassed) {
 			console.log("\nMaestro: PASSED");
@@ -113,13 +177,13 @@ export async function runTest(
 			}
 		}
 
-		// 8. Export JSON if --output specified
+		// 11. Export JSON if --output specified
 		if (args.output) {
 			await exportJson(session, score, args.output);
 			console.log(`\nJSON report saved to ${args.output}`);
 		}
 
-		// 9. Return exit code (0 if both maestro passed and score is not poor)
+		// 12. Return exit code (0 if both maestro passed and score is not poor)
 		if (!maestroPassed) return 1;
 		return score.category === ScoreCategory.POOR ? 1 : 0;
 	} catch (error) {

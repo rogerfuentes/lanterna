@@ -23,7 +23,7 @@ export function renderDashboard(
 	if (apps.length === 0) {
 		lines.push("│  Waiting for apps to connect...             │");
 		lines.push("│                                             │");
-		lines.push("│  Add lanterna-react-native to your app      │");
+		lines.push("│  Add @lanternajs/react-native to your app      │");
 		lines.push("│  and it will auto-connect.                  │");
 	} else {
 		for (const app of apps) {

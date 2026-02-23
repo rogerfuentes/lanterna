@@ -5,7 +5,7 @@ import type {
 	NavigationTimelineData,
 	NetworkRequestData,
 	ScoreResult,
-} from "@lanterna/core";
+} from "@lanternajs/core";
 
 export interface JsonReport {
 	version: string;

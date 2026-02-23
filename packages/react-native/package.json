@@ -1,11 +1,30 @@
 {
-  "name": "lanterna-react-native",
+  "name": "@lanternajs/react-native",
   "version": "0.0.1",
   "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": ["dist", "src", "ios", "android", "plugin"],
+  "license": "Apache-2.0",
+  "description": "React Native in-app performance module for Lanterna",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicepkg/lanterna.git",
+    "directory": "packages/react-native"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "codegenConfig": {
+    "name": "lanternamodule",
+    "type": "modules",
+    "jsSrcsDir": "./src/specs",
+    "android": {
+      "javaPackageName": "com.lanterna"
+    }
+  },
   "dependencies": {
-    "@lanterna/core": "workspace:*"
+    "@lanternajs/core": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
@@ -20,7 +39,11 @@
     }
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --project tsconfig.build.json",
+    "prepublishOnly": "npm run build",
     "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14"
   }
 }

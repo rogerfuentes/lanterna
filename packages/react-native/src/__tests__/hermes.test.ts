@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MetricType } from "@lanterna/core";
+import { MetricType } from "@lanternajs/core";
 import { hermesToSamples, parseHermesProfile, parseHermesProfileData } from "../hermes";
 
 describe("parseHermesProfile", () => {

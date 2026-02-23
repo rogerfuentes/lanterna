@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MetricType } from "@lanterna/core";
+import { MetricType } from "@lanternajs/core";
 import { parseTopMemory } from "../parsers/memory";
 import { parseXctraceXml } from "../parsers/xctrace-xml";
 

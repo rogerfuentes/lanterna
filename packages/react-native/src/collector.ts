@@ -1,4 +1,4 @@
-import type { MetricSample } from "@lanterna/core";
+import type { MetricSample } from "@lanternajs/core";
 import type { BridgeStats } from "./bridge-tracker";
 import type { FpsResult } from "./fps";
 import { calculateFps, fpsToSamples } from "./fps";

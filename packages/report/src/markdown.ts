@@ -1,4 +1,4 @@
-import type { ComparisonResult, MeasurementSession, ScoreResult } from "@lanterna/core";
+import type { ComparisonResult, MeasurementSession, ScoreResult } from "@lanternajs/core";
 import { categoryLabel, formatMetricValue, metricLabel } from "./format";
 
 function statusEmoji(category: string): string {

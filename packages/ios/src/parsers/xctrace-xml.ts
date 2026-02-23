@@ -1,4 +1,4 @@
-import { type MetricSample, MetricType } from "@lanterna/core";
+import { type MetricSample, MetricType } from "@lanternajs/core";
 
 /**
  * Parse the XML output from `xcrun xctrace export` (Time Profiler template).

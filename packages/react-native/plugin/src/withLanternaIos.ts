@@ -10,8 +10,8 @@ export interface IosPluginConfig {
 }
 
 export const IOS_DEFAULTS: IosPluginConfig = {
-	podName: "lanterna-react-native",
-	podPath: "../node_modules/lanterna-react-native",
+	podName: "@lanternajs/react-native",
+	podPath: "../node_modules/@lanternajs/react-native",
 };
 
 /**

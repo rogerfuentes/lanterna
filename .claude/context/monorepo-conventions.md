@@ -7,12 +7,12 @@ Bun workspace patterns and TypeScript configuration for this monorepo.
 
 ### TypeScript
 - `noEmit: true` — TypeScript is for type checking only, Bun runs `.ts` directly
-- No `tsc --build` or project references — Bun resolves `@lanterna/*` workspace aliases natively
-- Root `tsconfig.json` with `paths: { "@lanterna/*": ["./packages/*/src"] }`
+- No `tsc --build` or project references — Bun resolves `@lanternajs/*` workspace aliases natively
+- Root `tsconfig.json` with `paths: { "@lanternajs/*": ["./packages/*/src"] }`
 - Typecheck: `bun run typecheck` (runs `tsc --noEmit`)
 
 ### Imports
-- Cross-package: `import { X } from "@lanterna/core"` — no `.ts` extensions
+- Cross-package: `import { X } from "@lanternajs/core"` — no `.ts` extensions
 - Intra-package: `import { X } from "./module"` — no `.ts` extensions
 - `moduleResolution: "bundler"` handles all resolution
 

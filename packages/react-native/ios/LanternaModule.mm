@@ -1,6 +1,16 @@
 #import "LanternaModule.h"
 #import <QuartzCore/CADisplayLink.h>
 #import <React/RCTLog.h>
+#import <mach/mach.h>
+
+#ifdef RCT_NEW_ARCH_ENABLED
+#import <lanternamodule/lanternamodule.h>
+
+using namespace facebook::react;
+
+@interface LanternaModule () <NativeLanternaSpec>
+@end
+#endif
 
 @implementation LanternaModule {
     CADisplayLink *_displayLink;
@@ -8,6 +18,10 @@
 }
 
 RCT_EXPORT_MODULE(LanternaModule)
+
++ (BOOL)requiresMainQueueSetup {
+    return NO;
+}
 
 - (instancetype)init {
     self = [super init];
@@ -132,5 +146,14 @@ RCT_EXPORT_METHOD(getActiveSessionId:(RCTPromiseResolveBlock)resolve
         [_frameTimestamps addObject:@(timestampMs)];
     }
 }
+
+#ifdef RCT_NEW_ARCH_ENABLED
+
+- (std::shared_ptr<TurboModule>)getTurboModule:(const ObjCTurboModule::InitParams &)params
+{
+    return std::make_shared<NativeLanternaSpecJSI>(params);
+}
+
+#endif
 
 @end

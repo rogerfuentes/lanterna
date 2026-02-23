@@ -60,6 +60,8 @@ export class LanternaWsClient {
 	private reconnectAttempts = 0;
 	private listeners = new Set<ClientEventListener>();
 	private intervalMs = DEFAULT_INTERVAL_MS;
+	private ws: WebSocket | null = null;
+	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// App info for handshake
 	private appId: string;
@@ -76,6 +78,105 @@ export class LanternaWsClient {
 		this.appId = appId;
 		this.platform = platform;
 		this.deviceName = deviceName;
+	}
+
+	/**
+	 * Open a WebSocket connection to the Lanterna CLI server.
+	 * Sends handshake on connect, handles reconnection automatically.
+	 */
+	connect(): void {
+		if (this.state === "connecting" || this.state === "connected") return;
+
+		this.setState("connecting");
+
+		try {
+			const url = `ws://${this.config.host}:${this.config.port}`;
+			const ws = new WebSocket(url);
+
+			ws.onopen = () => {
+				this.ws = ws;
+				ws.send(this.createHandshakeMessage());
+			};
+
+			ws.onmessage = (event) => {
+				this.handleMessage(String(event.data));
+			};
+
+			ws.onclose = () => {
+				this.ws = null;
+				if (this.state === "connected") {
+					this.handleDisconnect("connection closed");
+				}
+				if (this.shouldReconnect()) {
+					this.scheduleReconnect();
+				}
+			};
+
+			ws.onerror = () => {
+				// onclose will fire after onerror — reconnection handled there
+				this.emit({ type: "error", message: "WebSocket connection error" });
+			};
+		} catch {
+			this.setState("disconnected");
+			if (this.shouldReconnect()) {
+				this.scheduleReconnect();
+			}
+		}
+	}
+
+	/**
+	 * Close the connection and stop reconnection attempts.
+	 */
+	disconnect(reason = "client stopped"): void {
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer);
+			this.reconnectTimer = null;
+		}
+		this.reconnectAttempts = this.config.maxReconnectAttempts; // prevent reconnect
+
+		if (this.ws) {
+			try {
+				this.ws.send(this.createDisconnectMessage(reason));
+			} catch {
+				// ignore send errors during shutdown
+			}
+			this.ws.close();
+			this.ws = null;
+		}
+
+		this.sessionId = null;
+		this.setState("disconnected");
+	}
+
+	/**
+	 * Send a raw message string over the WebSocket.
+	 * Returns true if sent, false if not connected.
+	 */
+	send(data: string): boolean {
+		if (!this.ws || this.state !== "connected") return false;
+		try {
+			this.ws.send(data);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	/**
+	 * Send a metric snapshot to the CLI server.
+	 * Only sends if connected (sessionId established via handshake).
+	 */
+	sendSnapshot(snapshot: MetricSnapshot, memoryMb?: number): boolean {
+		if (!this.sessionId) return false;
+		return this.send(this.serializeSnapshotWithMemory(snapshot, memoryMb));
+	}
+
+	private scheduleReconnect(): void {
+		this.attemptReconnect();
+		this.reconnectTimer = setTimeout(() => {
+			this.reconnectTimer = null;
+			this.connect();
+		}, this.config.reconnectDelayMs);
 	}
 
 	/** Current connection state. */
@@ -136,6 +237,10 @@ export class LanternaWsClient {
 	 * Serialize a metric snapshot for sending to the server.
 	 */
 	serializeSnapshot(snapshot: MetricSnapshot): string {
+		return this.serializeSnapshotWithMemory(snapshot);
+	}
+
+	private serializeSnapshotWithMemory(snapshot: MetricSnapshot, memoryMb?: number): string {
 		const metrics: Record<string, number> = {};
 		for (const sample of snapshot.samples) {
 			metrics[sample.type] = sample.value;
@@ -145,7 +250,9 @@ export class LanternaWsClient {
 			? { ui: snapshot.fps.fps, js: 0, droppedFrames: snapshot.fps.droppedFrames }
 			: undefined;
 
-		const msg = createMetricsMessage(this.sessionId ?? "unknown", metrics, fps);
+		const memory = memoryMb != null && memoryMb > 0 ? { usedMb: memoryMb } : undefined;
+
+		const msg = createMetricsMessage(this.sessionId ?? "unknown", metrics, fps, memory);
 		return serializeMessage(msg);
 	}
 
