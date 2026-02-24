@@ -1,0 +1,108 @@
+---
+title: "Data Flow"
+description: "How metrics flow through the Lanterna pipeline"
+---
+
+## Measurement Pipeline
+
+The `lanterna measure` command executes the following pipeline:
+
+1. **Device detection** — Queries `adb devices` (Android), `xcrun simctl list` (iOS simulators), and `xcrun xctrace list devices` (iOS physical devices) to find available targets.
+
+2. **Platform-specific metric collection (Tier 1)** — Starts the appropriate collector for the detected platform. Android uses `adb shell top`, `dumpsys meminfo`, and `dumpsys gfxinfo`. iOS uses `xcrun xctrace record` followed by `xcrun xctrace export`.
+
+3. **Time-series sampling** — Metrics are collected as time-series samples over the configured measurement duration (default 10 seconds). Each sample contains a timestamp and values for all available metric types.
+
+4. **Sample aggregation** — Raw samples are aggregated by metric type. Values are averaged across the measurement window to produce a single representative value per metric.
+
+5. **Scoring** — Aggregated values are scored using weighted linear interpolation against configurable thresholds. The overall score is a weighted combination: UI FPS (25%), JS FPS (20%), CPU (15%), Memory (15%), Frame Drops (15%), TTI (10%).
+
+6. **Heuristic analysis** — 11 built-in heuristics examine the scored data for specific patterns (e.g., memory leaks, excessive bridge traffic, slow screen TTID). Each triggered heuristic adds a finding to the report.
+
+7. **Report rendering** — The scored session is rendered as terminal output by default. Optional formats (JSON, HTML, Markdown, Perfetto, SpeedScope) are generated when requested via flags or API.
+
+## Test Pipeline
+
+The `lanterna test` command extends the measurement pipeline with Maestro flow automation and Tier 2 data collection:
+
+1. **Parse Maestro flow YAML** — Reads and validates the Maestro flow file that defines the automated user journey to execute during measurement.
+
+2. **Device detection and selection** — Same as the measurement pipeline. The selected device must have the target app installed.
+
+3. **Start WebSocket server** — Opens a WebSocket server on port 8347 to receive Tier 2 metrics from the in-app module running inside the app.
+
+4. **Parallel execution** — Two processes run simultaneously:
+   - **Tier 1 metric collection** — Platform tools collect external metrics as in the measurement pipeline
+   - **Maestro flow execution** — The Maestro CLI runs the defined user journey against the app
+
+5. **Tier 2 metric streaming** — If the app has `@lanternajs/react-native` installed, metric snapshots are streamed to the WebSocket server throughout the test execution.
+
+6. **Sample merging** — Tier 1 and Tier 2 samples are merged into a single session. Timestamp alignment correlates native trace data with JavaScript profiler data. When both tiers report the same metric, the higher-fidelity Tier 2 source takes precedence.
+
+7. **Scoring and heuristic analysis** — The merged session is scored and analyzed identically to the measurement pipeline.
+
+8. **Combined report** — The final report includes both performance scores and the Maestro flow pass/fail result, giving a complete picture of functional and performance quality.
+
+## Live Monitoring Pipeline
+
+The `lanterna monitor` command provides real-time performance visibility:
+
+1. **CLI starts WebSocket server** — Opens a WebSocket server on the configured port (default 8347) and begins listening for connections.
+
+2. **App connects** — When `LanternaProvider` mounts in the app, it establishes a WebSocket connection to `ws://localhost:8347`.
+
+3. **Collection loop** — Every `intervalMs` (default 500ms), the in-app module executes:
+   - Polls the native Turbo Module for frame timestamps and memory usage
+   - Feeds tracker data (network, bridge, layout) to the metric collector
+   - Collects a unified snapshot of all current metrics
+   - Streams the snapshot to the CLI via WebSocket
+
+4. **Live terminal dashboard** — The CLI renders a continuously updating terminal dashboard showing:
+   - Connected device information
+   - Real-time FPS graphs (UI and JS threads)
+   - CPU and memory usage
+   - Current screen name and TTID
+   - Recent network requests and bridge activity
+
+5. **Dashboard refresh** — Each incoming snapshot triggers a dashboard re-render, providing near-real-time visibility into app performance.
+
+Multiple apps can connect to the same monitoring session. The dashboard displays data for all connected devices.
+
+## CI Pipeline
+
+Integrate Lanterna into continuous integration workflows:
+
+1. **Install the CLI** in your CI environment:
+   ```bash
+   bun add -g @lanternajs/cli
+   ```
+
+2. **Run a measurement** and export as JSON:
+   ```bash
+   lanterna measure com.example.app --output report.json
+   ```
+
+3. **Upload the JSON report** as a CI artifact for use as a future baseline.
+
+4. **On subsequent runs**, download the previous artifact and pass it as a baseline:
+   ```bash
+   lanterna measure com.example.app \
+     --baseline previous.json \
+     --output current.json
+   ```
+
+5. **Regression detection** — When a baseline is provided, Lanterna compares the current scores against the baseline. The process exits with code 1 if a regression is detected, failing the CI build.
+
+### Threshold-based gating
+
+For simpler setups without baseline comparison, gate on an absolute score:
+
+```bash
+SCORE=$(lanterna measure com.example.app --output report.json \
+  && jq '.score.overall' report.json)
+
+if [ "$SCORE" -lt 70 ]; then
+  echo "Performance score $SCORE is below the required threshold of 70"
+  exit 1
+fi
+```

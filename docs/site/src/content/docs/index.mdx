@@ -1,0 +1,57 @@
+---
+title: Lanterna
+description: CLI-first, cross-platform performance profiler for React Native and Expo apps.
+template: splash
+hero:
+  title: Lanterna
+  tagline: "Illuminate your app's performance. One command to capture, analyze, and report — no Xcode or Android Studio required."
+  actions:
+    - text: Get Started
+      link: /lanterna/getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/rogerfuentes/lanterna
+      icon: external
+      variant: minimal
+---
+
+## Why Lanterna?
+
+Lanterna is a CLI-first, cross-platform performance profiler designed specifically for React Native and Expo apps. Think of it as **Lighthouse for mobile apps** — capture, analyze, and report performance metrics from a single terminal command.
+
+### Key Features
+
+- **Cross-platform** — Full support for both iOS and Android. iOS profiling powered by `xcrun xctrace` directly from the CLI, no Xcode GUI required.
+- **Zero-config entry point** — Works on any running app without code changes. Point it at a package name and go.
+- **RN-aware weighted scoring** — A 0-100 composite score calculated from 11 heuristics tuned for React Native: UI FPS, JS FPS, CPU usage, memory, frame drops, TTI, and more.
+- **CI/CD ready** — JSON export, baseline comparison with regression detection, and a GitHub Action for automated performance gates.
+- **6 report formats** — Terminal, JSON, HTML, Markdown, Perfetto, and SpeedScope output to fit every workflow.
+
+### See It in Action
+
+```
+╭───────────────────────────────────────╮
+│  lanterna v0.0.1                      │
+│                                       │
+│  Score: 72 / 100  Needs Work          │
+│  ██████████████░░░░░░  72%            │
+│                                       │
+│  Device: Pixel 6 (android, emulator)  │
+│  Duration: 10s                        │
+├───────────────────────────────────────┤
+│  UI FPS         57.3 fps    ████  95  │
+│  JS FPS         48.2 fps    ███░  62  │
+│  CPU Usage      35.1%       ███░  55  │
+│  Memory         245 MB      ███░  78  │
+│  Frame Drops    8.2%        ██░░  42  │
+│  TTI            1.8s        ████  90  │
+╰───────────────────────────────────────╯
+```
+
+### Quick Install
+
+```bash
+bun add -g @lanternajs/cli
+lanterna measure com.example.app
+```

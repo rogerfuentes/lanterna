@@ -1,0 +1,102 @@
+---
+title: "Perfetto & SpeedScope"
+description: "Export traces for deep analysis in external profiling tools"
+---
+
+## Perfetto Export
+
+Lanterna can export metric data as Chrome DevTools-compatible trace event JSON, viewable in [Perfetto UI](https://ui.perfetto.dev) for detailed timeline analysis.
+
+```typescript
+import { exportPerfetto } from '@lanternajs/report';
+
+// Generate Perfetto trace JSON
+const trace = exportPerfetto(session, score);
+
+// Write to file
+import { writeFile } from 'fs/promises';
+await writeFile('trace.json', JSON.stringify(trace));
+```
+
+### Thread Mapping
+
+Metric types are mapped to named threads in the Perfetto trace for organized visualization:
+
+| Thread | TID | Metrics |
+|--------|-----|---------|
+| UI Thread | 1 | UI FPS, Frame Drops |
+| JS Thread | 2 | JS FPS |
+| System | 3 | CPU, Memory |
+| Lifecycle | 4 | TTI |
+
+Each metric sample becomes a trace event with the corresponding timestamp, duration, and value. This mapping allows you to see how different metric types correlate in time.
+
+### Viewing the Trace
+
+1. Open [ui.perfetto.dev](https://ui.perfetto.dev) in Chrome
+2. Click "Open trace file" or drag and drop the exported JSON file
+3. Use the timeline to zoom into specific time ranges
+4. Click on individual events to see metric values and metadata
+
+Perfetto provides powerful query capabilities through its SQL interface, allowing you to aggregate and filter trace data beyond what Lanterna's built-in reports offer.
+
+## SpeedScope Export
+
+SpeedScope format is designed for JavaScript CPU profiling visualization, compatible with [speedscope.app](https://www.speedscope.app).
+
+```typescript
+import { exportSpeedScope } from '@lanternajs/report';
+
+// Generate SpeedScope profile JSON
+const profile = exportSpeedScope(session, score);
+
+// Write to file
+import { writeFile } from 'fs/promises';
+await writeFile('profile.speedscope.json', JSON.stringify(profile));
+```
+
+### Profile Structure
+
+The export creates one profile per metric type within a single SpeedScope file. Each profile contains time-ordered samples that can be viewed as:
+
+- **Time Order** — Samples arranged chronologically, showing metric values over the measurement duration
+- **Left Heavy** — Aggregated view grouping similar values together
+- **Sandwich** — Combined view showing both callers and callees (most useful with Hermes CPU profile data)
+
+### Viewing the Profile
+
+1. Open [speedscope.app](https://www.speedscope.app) in your browser
+2. Drop the exported JSON file onto the page
+3. Select the metric profile you want to examine from the dropdown
+4. Switch between Time Order, Left Heavy, and Sandwich views
+
+## When to Use Each
+
+### Perfetto
+
+Use Perfetto traces when you need:
+
+- **Timeline correlation** — See how UI FPS drops correlate with CPU spikes or memory pressure
+- **Native-level analysis** — Combine Lanterna traces with platform-native Perfetto traces for full-stack visibility
+- **Time-range queries** — Use Perfetto's SQL engine to query specific time windows or aggregate patterns
+- **Team sharing** — Perfetto traces can be shared via URL for collaborative debugging
+
+### SpeedScope
+
+Use SpeedScope profiles when you need:
+
+- **JavaScript CPU analysis** — Flame chart visualization of JS thread activity
+- **Hermes profile inspection** — View Hermes CPU profiles alongside Lanterna metric data
+- **Call stack analysis** — Identify hot functions and call paths contributing to performance issues
+- **Quick inspection** — SpeedScope loads instantly in the browser with no setup required
+
+### Complementary Usage
+
+Both formats complement Lanterna's built-in reports. The terminal, HTML, and Markdown reports provide high-level scoring and heuristic analysis. Perfetto and SpeedScope exports offer drill-down capability when you need to investigate the root cause of a performance issue identified by the scoring engine.
+
+A typical workflow:
+
+1. Run `lanterna measure` and review the terminal report for the overall score
+2. If a specific metric scores poorly, generate an HTML report for detailed per-metric analysis
+3. Export to Perfetto to correlate the problematic metric with other system activity over time
+4. Export to SpeedScope to inspect JS thread behavior during the affected time range

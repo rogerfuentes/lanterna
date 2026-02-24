@@ -1,0 +1,108 @@
+---
+title: "How Scoring Works"
+description: "Understanding Lanterna's weighted 0-100 performance score"
+---
+
+## Overview
+
+Lanterna produces a single weighted **0-100 performance score** for every measurement session, inspired by Lighthouse's approach to web performance scoring. The score aggregates six key metrics collected during profiling — UI FPS, JS FPS, CPU usage, memory consumption, frame drop rate, and time to interactive — into a single number that represents the overall health of your React Native app.
+
+A higher score means better performance. The score is designed to be reproducible across runs and comparable across platforms, giving teams a shared language for performance conversations.
+
+## Scoring Algorithm
+
+The scoring pipeline follows four sequential steps:
+
+### 1. Collect Time-Series Samples
+
+During a measurement session, Lanterna continuously polls metrics at regular intervals. For a typical 10-second session, this produces dozens of data points per metric. The raw samples capture the full performance profile of the measurement window.
+
+### 2. Average Each Metric
+
+Each metric type is averaged across all collected samples to produce a single representative value. For example, if CPU usage samples were `[32%, 28%, 35%, 30%]`, the averaged value would be `31.25%`.
+
+### 3. Score Each Metric (0-100)
+
+Each averaged metric value is scored individually on a 0-100 scale using **linear interpolation** between predefined good and poor thresholds. A value at or better than the "good" threshold scores 100. A value at or worse than the "poor" threshold scores 0. Values in between are scaled linearly.
+
+### 4. Compute Weighted Sum
+
+The overall score is the weighted average of all individual metric scores:
+
+```
+Overall = Σ(MetricScore × Weight) / Σ(Weights)
+```
+
+Each metric contributes proportionally to its assigned weight. See the [Metrics Reference](/scoring/metrics) for the full weight table.
+
+## Linear Interpolation
+
+Lanterna uses two interpolation formulas depending on whether the metric improves by going up or going down.
+
+### Higher is Better (FPS metrics)
+
+For metrics like UI Thread FPS and JS Thread FPS, higher values indicate better performance:
+
+```
+score = ((value - poor) / (good - poor)) × 100
+```
+
+- If value ≥ good, the score is clamped to **100**.
+- If value ≤ poor, the score is clamped to **0**.
+- Values between poor and good are scaled linearly.
+
+**Example:** With good = 57 fps and poor = 45 fps, a measured UI FPS of 51 produces:
+
+```
+score = ((51 - 45) / (57 - 45)) × 100 = 50
+```
+
+### Lower is Better (CPU, Memory, Frame Drops, TTI)
+
+For metrics where lower values indicate better performance:
+
+```
+score = ((poor - value) / (poor - good)) × 100
+```
+
+- If value ≤ good, the score is clamped to **100**.
+- If value ≥ poor, the score is clamped to **0**.
+- Values between `good` and `poor` are scaled linearly.
+
+**Example:** With good = 30% and poor = 60%, a measured CPU usage of 45% produces:
+
+```
+score = ((60 - 45) / (60 - 30)) × 100 = 50
+```
+
+## Score Categories
+
+The overall score maps to one of three categories:
+
+| Category | Score Range | Meaning |
+|-----------|-------------|---------|
+| **Good** | 75 - 100 | App performance meets quality standards |
+| **Needs Work** | 40 - 74 | Performance issues exist that may affect user experience |
+| **Poor** | 0 - 39 | Significant performance problems requiring immediate attention |
+
+These categories are used in CLI output, HTML reports, and CI/CD exit codes.
+
+## Customizing Thresholds
+
+The default thresholds work well for most React Native apps, but you can override them for your specific use case using a `.lanternarc` configuration file in your project root.
+
+```json
+{
+  "thresholds": {
+    "tti": { "good": 1.5, "poor": 3 }
+  }
+}
+```
+
+You only need to specify the thresholds you want to change. Unspecified metrics retain their defaults. This is useful when:
+
+- Your app targets high-end devices where stricter thresholds are appropriate.
+- You have a content-heavy app where slightly higher memory usage is acceptable.
+- Your startup flow is intentionally longer due to required initialization.
+
+See the [Metrics Reference](/scoring/metrics) for the full list of default thresholds.

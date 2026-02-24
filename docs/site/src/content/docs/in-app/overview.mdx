@@ -1,0 +1,74 @@
+---
+title: "In-App Module Overview"
+description: "Add @lanternajs/react-native for real-time metrics and deep instrumentation"
+---
+
+## What is the In-App Module
+
+`@lanternajs/react-native` provides Tier 2 and Tier 3 data collection from inside your React Native app. While Tier 1 (CLI-only) works on any running app without code changes, the in-app module enables real-time FPS tracking, navigation instrumentation, network waterfall, and more.
+
+The in-app module bridges the gap between external observation and internal visibility. Tier 1 metrics tell you _what_ is happening at the platform level; the in-app module tells you _why_ it is happening at the JavaScript and React level.
+
+## When to Use It
+
+Install the in-app module when you need any of the following:
+
+- Real-time JS and UI FPS measurement
+- Per-screen TTID (Time to Initial Display) breakdown
+- Network request waterfall with timing and response data
+- Native bridge call frequency tracking
+- Layout event detection for excessive Yoga passes
+- Live monitoring via `lanterna monitor`
+
+If you only need high-level CPU, memory, and frame drop metrics, Tier 1 (CLI-only) is sufficient and requires no code changes.
+
+## Installation
+
+```bash
+npm install @lanternajs/react-native
+# or
+bun add @lanternajs/react-native
+```
+
+For Expo projects, no additional native linking is required. For bare React Native projects, run `cd ios && pod install` after installation.
+
+## Quick Setup
+
+Wrap your app root with `LanternaProvider`:
+
+```tsx
+import { LanternaProvider } from '@lanternajs/react-native';
+
+export default function App() {
+  return (
+    <LanternaProvider>
+      <YourApp />
+    </LanternaProvider>
+  );
+}
+```
+
+That is all you need. The provider starts all passive trackers, connects to the CLI via WebSocket, and begins streaming metrics automatically.
+
+## Capabilities
+
+| Feature | Tier | Description |
+|---------|------|-------------|
+| FPS Tracking | 2 | UI/JS thread frame rates via native CADisplayLink/Choreographer |
+| Hermes Profiling | 2 | CPU profile from the Hermes JS engine |
+| React Profiler | 2 | Component render times via React Profiler API |
+| Navigation Tracking | 2 | Per-screen TTID/TTFD with React Navigation and Expo Router |
+| Network Waterfall | 3 | Intercepts fetch/XHR for timing, status, response size |
+| Bridge Tracking | 3 | Monitors native bridge call frequency and top modules |
+| Layout Tracking | 3 | Detects components with excessive Yoga layout passes |
+| WebSocket Streaming | 2 | Streams metrics to CLI dashboard in real-time |
+
+Tier 2 features are enabled by default. Tier 3 features are automatically activated when `LanternaProvider` is mounted and add deeper instrumentation with slightly higher overhead.
+
+## Architecture
+
+The in-app module is built as a Turbo Module (New Architecture) with backward compatibility for the old bridge architecture. It uses React Native Codegen for type-safe native bindings, ensuring consistent behavior across platforms.
+
+On iOS, frame timing data is collected via `CADisplayLink`. On Android, `Choreographer.FrameCallback` provides equivalent functionality. Both platforms report frame timestamps to the JavaScript layer through the Turbo Module interface.
+
+The module communicates with the Lanterna CLI through a WebSocket connection on port 8347. Metric snapshots are collected at a configurable interval (default 500ms) and streamed to the CLI for real-time display or aggregation into a final report.

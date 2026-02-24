@@ -1,0 +1,83 @@
+---
+title: "HTML Report"
+description: "Generate Lighthouse-style HTML performance reports"
+---
+
+## Generating an HTML Report
+
+Use the `@lanternajs/report` package to generate self-contained HTML reports:
+
+```typescript
+import { renderHtmlReport, exportHtml } from '@lanternajs/report';
+
+// Get the HTML string for custom handling
+const html = renderHtmlReport(session, score);
+
+// Or export directly to a file
+await exportHtml(session, score, 'report.html');
+```
+
+The `session` parameter is a completed `ProfilingSession` containing metric samples. The `score` parameter is the result of running the scoring engine on that session. Both are returned by the measurement pipeline.
+
+### Including a baseline comparison
+
+```typescript
+import { renderHtmlReport } from '@lanternajs/report';
+
+const html = renderHtmlReport(session, score, {
+  baseline: previousScore,
+});
+```
+
+When a baseline is provided, the report includes a comparison section showing deltas for each metric.
+
+## Report Contents
+
+The generated HTML report includes the following sections:
+
+### Score Gauge
+
+An SVG circular gauge at the top of the report displaying the overall performance score (0-100). The gauge color reflects the score category:
+
+- **Green** (`#0cce6b`): Score 90-100 (Good)
+- **Amber** (`#ffa400`): Score 50-89 (Needs Work)
+- **Red** (`#ff4e42`): Score 0-49 (Poor)
+
+### Device Information
+
+A metadata block showing the device name, platform, device type (physical/emulator/simulator), and measurement duration.
+
+### Metric Cards
+
+Each measured metric is presented as a card containing:
+
+- Metric name and measured value
+- Individual score (0-100) with color-coded category
+- A horizontal bar indicating the score visually
+- Comparison delta when baseline data is available
+
+### Comparison Section
+
+When a baseline is provided, a dedicated comparison section displays:
+
+- Overall score change with directional arrow
+- Per-metric deltas showing improvement or regression
+- Regression markers for metrics that dropped below their previous category threshold
+
+## Dark Mode
+
+The HTML report automatically adapts to the user's system preference using `prefers-color-scheme: dark`. All colors, backgrounds, and text are defined via CSS custom properties, ensuring consistent appearance in both light and dark environments.
+
+No manual toggle is required. The report respects the operating system or browser-level dark mode setting.
+
+## Color Scheme
+
+The report uses a three-tier color scheme consistent across all Lanterna output formats:
+
+| Category | Color | Hex | Score Range |
+|----------|-------|-----|-------------|
+| Good | Green | `#0cce6b` | 90-100 |
+| Needs Work | Amber | `#ffa400` | 50-89 |
+| Poor | Red | `#ff4e42` | 0-49 |
+
+These colors are chosen for accessibility and consistency with the Lighthouse scoring convention that developers are already familiar with.

@@ -1,0 +1,142 @@
+---
+title: "iOS Profiling"
+description: "How Lanterna collects performance metrics on iOS via xctrace"
+---
+
+## Prerequisites
+
+iOS profiling requires **macOS** with Xcode Command Line Tools installed. Lanterna uses `xcrun xctrace` under the hood, which is only available on macOS.
+
+Install the required tools:
+
+```bash
+xcode-select --install
+```
+
+Verify the installation:
+
+```bash
+xcrun xctrace version
+```
+
+You should see the xctrace version number corresponding to your installed Xcode version.
+
+## How Metrics Are Collected
+
+Lanterna uses a 7-step pipeline to collect and process iOS performance data:
+
+### Step 1 — Find App PID
+
+Lanterna locates the target app's process ID using platform-appropriate discovery:
+
+- **Simulator:** `xcrun simctl spawn <deviceId> launchctl list` to enumerate running processes
+- **Physical device:** `pgrep -f <bundleId>` to find the process by bundle identifier
+
+### Step 2 — Create Temp Directory
+
+A temporary directory is created to store the trace file and exported XML. This directory is cleaned up automatically after processing.
+
+### Step 3 — Record Trace
+
+```bash
+xcrun xctrace record \
+  --template "Time Profiler" \
+  --attach <pid> \
+  --time-limit <duration>s \
+  --output trace.trace
+```
+
+The Time Profiler template captures CPU sampling data at regular intervals. The `--attach` flag connects to an already-running process, and `--time-limit` controls the measurement duration.
+
+### Step 4 — Export XML
+
+```bash
+xcrun xctrace export \
+  --input trace.trace \
+  --xpath '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]'
+```
+
+The trace binary is exported to XML format using an XPath query that targets the time profile data table.
+
+### Step 5 — Parse CPU Metrics
+
+The exported XML contains weight values in nanoseconds representing CPU time spent in each function. Lanterna aggregates these weights and converts them to a CPU utilization percentage relative to the total measurement duration.
+
+### Step 6 — Collect Memory
+
+```bash
+top -l 1 -pid <pid> -stats pid,rsize
+```
+
+A single snapshot of the process's resident set size (rsize) is captured to measure memory consumption in megabytes.
+
+### Step 7 — Cleanup
+
+Temporary trace files and exported XML are deleted to avoid accumulating large files on disk.
+
+## Limitations
+
+There are several important limitations to be aware of when profiling iOS apps:
+
+- **No real-time streaming.** The xctrace tool follows a record-then-export model. Data is only available after the recording completes. For live monitoring, use the Tier 2 in-app module with `lanterna monitor`.
+- **macOS only.** iOS profiling cannot be performed from Linux or Windows. This affects CI environments — you must use macOS runners for iOS performance checks.
+- **Recording overhead.** The Time Profiler template adds a small amount of overhead to the profiled process. Results are representative but not perfectly identical to uninstrumented performance.
+
+## Xcode Version Compatibility
+
+Lanterna detects the installed Xcode version and adjusts its XML parsing accordingly. The `xctrace export` format is **underdocumented by Apple** and can vary between Xcode releases, particularly in:
+
+- XML element naming and attribute structure
+- Table schema identifiers
+- Weight value encoding
+
+Lanterna maintains parsers for Xcode 14.x, 15.x, and 16.x. If you encounter parsing errors after an Xcode update, check for a Lanterna update or file an issue.
+
+## Simulator vs Physical Device
+
+Both iOS Simulator and physical devices are supported.
+
+| Aspect | Simulator | Physical Device |
+|--------|-----------|-----------------|
+| Process discovery | `xcrun simctl spawn` | `pgrep -f` |
+| Performance fidelity | Runs on Mac hardware (not representative) | Real device performance |
+| CI compatibility | Works on macOS runners | Requires connected device |
+| Setup | No additional setup | Developer Mode required |
+
+For accurate performance measurements, always validate on physical devices. The simulator runs on desktop-class hardware and does not reflect real-world mobile performance.
+
+## Troubleshooting
+
+### "xctrace not found"
+
+The Xcode Command Line Tools are not installed or not properly linked.
+
+```bash
+xcode-select --install
+```
+
+If already installed, ensure the correct Xcode is selected:
+
+```bash
+sudo xcode-select --switch /Applications/Xcode.app
+```
+
+### Permissions on Physical Devices
+
+Profiling a physical device may require:
+
+- **Developer Mode** enabled in Settings > Privacy & Security > Developer Mode (iOS 16+)
+- The device must be **trusted** by the Mac (connect via USB and approve the trust dialog)
+- For wireless debugging, the device must be on the same network and paired
+
+### "Process not found"
+
+- Verify the app is running on the target device
+- Check that the bundle identifier is correct
+- On Simulator, ensure you are targeting the correct simulator instance (use `xcrun simctl list devices booted` to see running simulators)
+
+### Trace Recording Fails
+
+- Ensure no other Instruments or xctrace session is active (only one trace can record at a time)
+- Check available disk space — trace files can be several hundred megabytes
+- On physical devices, ensure the device is not locked during recording

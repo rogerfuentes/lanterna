@@ -1,0 +1,128 @@
+---
+title: "Three-Tier Data Collection"
+description: "Understanding Lanterna's progressive instrumentation model"
+---
+
+## Overview
+
+Lanterna uses a progressive three-tier data collection model. Each tier adds more data and deeper visibility but requires incrementally more setup. You can start with Tier 1 (zero configuration) and adopt higher tiers as your profiling needs grow.
+
+| Tier | Setup Required | Data Sources | Overhead |
+|------|---------------|-------------|----------|
+| Tier 1 | None (CLI only) | Platform CLI tools (adb, xctrace) | Minimal |
+| Tier 2 | In-app module | FPS, Hermes profiler, React Profiler, navigation | Low |
+| Tier 3 | In-app module (auto-enabled) | Network waterfall, bridge tracking, layout events | Moderate |
+
+## Tier 1: External (Zero-Config)
+
+Tier 1 works on any running React Native app without code changes. The Lanterna CLI invokes platform-specific tools directly to collect metrics from outside the app process.
+
+### Android
+
+| Tool | Metrics Collected |
+|------|------------------|
+| `adb shell top` | CPU usage per process |
+| `adb shell dumpsys meminfo` | Memory allocation (PSS, private dirty) |
+| `adb shell dumpsys gfxinfo` | UI frame rendering stats, janky frames |
+
+### iOS
+
+| Tool | Metrics Collected |
+|------|------------------|
+| `xcrun xctrace record` | Time Profiler instrument capture |
+| `xcrun xctrace export` | XML extraction of CPU, memory, frame data |
+
+### What Tier 1 provides
+
+- CPU utilization over time
+- Memory usage and trends
+- UI FPS and frame drop counts
+- Overall performance score
+
+### Limitations
+
+Tier 1 cannot observe the JavaScript thread directly. This means:
+
+- No JS FPS measurement (only UI FPS from the native render pipeline)
+- No per-screen breakdown (no navigation awareness)
+- No network, bridge, or layout data
+- No real-time streaming to the CLI dashboard
+
+For many use cases, especially initial performance audits or CI gate checks, Tier 1 provides sufficient data to identify major issues.
+
+## Tier 2: In-App Module
+
+Install `@lanternajs/react-native` and wrap your app with `LanternaProvider` to unlock Tier 2 capabilities.
+
+```tsx
+import { LanternaProvider } from '@lanternajs/react-native';
+
+export default function App() {
+  return (
+    <LanternaProvider>
+      <YourApp />
+    </LanternaProvider>
+  );
+}
+```
+
+### What Tier 2 adds
+
+- **Real-time JS and UI FPS** via native `CADisplayLink` (iOS) and `Choreographer` (Android)
+- **Hermes CPU profiling** for JavaScript thread analysis
+- **React Profiler integration** for component render timing
+- **Navigation tracking** with per-screen TTID and TTFD (React Navigation and Expo Router)
+- **WebSocket streaming** to the CLI for live monitoring via `lanterna monitor`
+
+Tier 2 data is collected through a Turbo Module that runs on both the old and new React Native architectures. The module communicates frame timestamps and memory readings to the JavaScript layer at a configurable interval.
+
+## Tier 3: Deep Instrumentation
+
+Tier 3 features activate automatically when `LanternaProvider` is mounted. They provide the most granular data but introduce slightly higher overhead due to runtime interception.
+
+### Network Waterfall
+
+Patches `fetch` and `XMLHttpRequest` globally to capture:
+
+- Request URL, method, and headers
+- Response status code and size
+- Request duration from initiation to completion
+- Error details for failed requests
+
+### Bridge Tracking
+
+Monitors native bridge call frequency and identifies the most active native modules:
+
+- Calls per second across the bridge
+- Total call count over the measurement period
+- Top modules ranked by call volume
+
+### Layout Tracking
+
+Detects components that trigger excessive Yoga layout passes:
+
+- Total layout events during the session
+- Components exceeding the layout pass threshold
+- Average layout passes per component
+
+### Overhead considerations
+
+Tier 3 trackers add measurable but typically acceptable overhead:
+
+- Network interception adds approximately 1-2ms per request
+- Bridge tracking adds negligible overhead (event counting only)
+- Layout tracking overhead scales with component tree complexity
+
+For performance-critical benchmarking where you need the most accurate Tier 1 and Tier 2 numbers, you can disable Tier 3 by using `LanternaModule` directly instead of `LanternaProvider`.
+
+## Data Merging
+
+When `lanterna test` runs a Maestro flow with the in-app module installed, Tier 1 and Tier 2 data are collected simultaneously and merged into a single session before scoring.
+
+The merging process handles:
+
+- **Timestamp alignment** — Correlates native trace timestamps with JavaScript profiler timestamps to create a unified timeline
+- **Sample interpolation** — Fills gaps where one tier has data and the other does not
+- **Conflict resolution** — When both tiers report the same metric (e.g., UI FPS), the higher-fidelity source (Tier 2) takes precedence
+
+The merged session is then passed through the scoring engine and heuristic analysis, producing a single report that reflects all available data sources.

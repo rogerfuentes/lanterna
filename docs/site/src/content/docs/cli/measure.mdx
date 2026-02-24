@@ -1,0 +1,90 @@
+---
+title: lanterna measure
+description: Collect performance metrics for a running app.
+---
+
+## Synopsis
+
+```bash
+lanterna measure <package> [options]
+```
+
+## Description
+
+The `measure` command is Lanterna's primary entry point. It detects connected devices, selects the target platform, collects performance metrics for the specified duration, calculates a weighted composite score, and renders a terminal report.
+
+On **Android**, metrics are collected via `adb shell top`, `dumpsys meminfo`, `dumpsys gfxinfo`, and Perfetto traces. On **iOS**, metrics are collected via `xcrun xctrace record` followed by `xcrun xctrace export`.
+
+No app modifications are required. This is Tier 1 (external, zero-config) data collection.
+
+## Arguments
+
+### `<package>` (required)
+
+The app package name (Android) or bundle ID (iOS) to measure. This must match the identifier of a currently running app on the target device.
+
+```bash
+# Android package name
+lanterna measure com.example.myapp
+
+# iOS bundle ID
+lanterna measure com.example.MyApp
+```
+
+## Options
+
+| Flag | Alias | Default | Description |
+| --- | --- | --- | --- |
+| `--duration <seconds>` | `-d` | `10` | Measurement duration in seconds |
+| `--platform <ios\|android>` | `-p` | auto-detect | Force the target platform |
+| `--device <id>` | — | auto-select | Target a specific device by its ID |
+| `--output <path>` | `-o` | — | Export the JSON report to a file |
+| `--baseline <path>` | `-b` | — | Compare against a previous JSON report |
+| `--help` | `-h` | — | Show help |
+
+## Examples
+
+### Basic measurement
+
+```bash
+lanterna measure com.example.app
+```
+
+### Custom duration
+
+```bash
+lanterna measure com.example.app --duration 30
+```
+
+### Force iOS platform
+
+```bash
+lanterna measure com.example.app --platform ios
+```
+
+### Target a specific device
+
+```bash
+lanterna measure com.example.app --device emulator-5554
+```
+
+### Export a JSON report
+
+```bash
+lanterna measure com.example.app --output report.json
+```
+
+### Compare against a baseline
+
+```bash
+lanterna measure com.example.app --baseline previous.json --output current.json
+```
+
+## Exit Codes
+
+| Code | Meaning |
+| ---- | ------- |
+| `0`  | Measurement completed and the score is not in the Poor range (score ≥ 40) |
+| `1`  | Score is Poor (below 40), or a regression was detected when using `--baseline` |
+
+When `--baseline` is provided, Lanterna compares each metric against the baseline values. If any metric has regressed beyond the configured threshold, the command exits with code `1` regardless of the overall score. This makes it suitable for use as a CI performance gate.

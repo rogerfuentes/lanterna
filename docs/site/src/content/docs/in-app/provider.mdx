@@ -1,0 +1,126 @@
+---
+title: "LanternaProvider"
+description: "Zero-config React component for automatic performance profiling"
+---
+
+## Setup
+
+Wrap your app root with `LanternaProvider` to enable automatic performance profiling:
+
+```tsx
+import { LanternaProvider } from '@lanternajs/react-native';
+
+export default function App() {
+  return (
+    <LanternaProvider>
+      <Stack />
+    </LanternaProvider>
+  );
+}
+```
+
+The provider initializes all trackers, starts the native profiling module, and connects to the CLI via WebSocket. No additional configuration is required for most use cases.
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `enabled` | `boolean` | `true` | Enable or disable profiling. Set to `__DEV__` to restrict profiling to development builds only. |
+| `intervalMs` | `number` | `500` | Metric collection interval in milliseconds. Lower values provide more granular data but increase overhead. |
+| `navigationRef` | `{ current: any }` | auto-detect | Navigation container ref override. Auto-detects Expo Router if not provided. Required for React Navigation. |
+
+### Example with all props
+
+```tsx
+import { LanternaProvider } from '@lanternajs/react-native';
+import { useRef } from 'react';
+
+export default function App() {
+  const navigationRef = useRef(null);
+
+  return (
+    <LanternaProvider
+      enabled={__DEV__}
+      intervalMs={250}
+      navigationRef={navigationRef}
+    >
+      <NavigationContainer ref={navigationRef}>
+        <Stack />
+      </NavigationContainer>
+    </LanternaProvider>
+  );
+}
+```
+
+## useLanterna() Hook
+
+Access individual profiling modules from any component within the provider tree:
+
+```tsx
+import { useLanterna } from '@lanternajs/react-native';
+
+function MyComponent() {
+  const { marks, collector, navigationTracker } = useLanterna();
+  // Access any profiling module
+}
+```
+
+### Available modules
+
+| Module | Type | Purpose |
+|--------|------|---------|
+| `marks` | `PerformanceMarks` | Custom timing marks and measurements |
+| `profiler` | `ProfilerBridge` | React Profiler integration for render timing |
+| `collector` | `MetricCollector` | Aggregates all metric samples |
+| `navigationTracker` | `NavigationTracker` | Per-screen TTID/TTFD and navigation timeline |
+| `networkInterceptor` | `NetworkInterceptor` | Fetch/XHR request capture |
+| `bridgeTracker` | `BridgeTracker` | Native bridge call monitoring |
+| `layoutTracker` | `LayoutTracker` | Yoga layout pass detection |
+
+## What Happens Under the Hood
+
+When `LanternaProvider` mounts, the following sequence executes:
+
+1. **Starts all passive trackers** — Network interceptor patches `fetch` and `XMLHttpRequest`. Bridge tracker hooks into the native module system. Layout tracker registers for Yoga events.
+2. **Starts native profiling via Turbo Module** — Activates `CADisplayLink` (iOS) or `Choreographer.FrameCallback` (Android) for frame timing data.
+3. **Connects WebSocket client** — Establishes a connection to `ws://localhost:8347` where the CLI listens for incoming metric streams.
+4. **Runs a collection loop** every `intervalMs`:
+   - Polls the native module for frame timestamps and memory usage
+   - Feeds tracker data (network, bridge, layout) to the collector
+   - Collects a unified snapshot of all current metrics
+   - Streams the snapshot to the CLI via WebSocket
+
+When the provider unmounts, all trackers are stopped, the native module is deactivated, and the WebSocket connection is closed.
+
+## LanternaModule API
+
+For cases where you need manual control over the profiling lifecycle instead of using the declarative provider, the `LanternaModule` class provides a lower-level imperative API:
+
+```typescript
+import { LanternaModule } from '@lanternajs/react-native';
+
+const module = new LanternaModule();
+
+// Start profiling with options
+const session = await module.startProfiling({ intervalMs: 500 });
+
+// Get current metrics snapshot
+const metrics = await module.getMetrics();
+
+// Stop profiling and get completed session
+const completed = await module.stopProfiling();
+
+// Subscribe to metric events
+const unsub = module.on('metrics', (payload) => {
+  console.log('New metrics:', payload);
+});
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isAvailable` | `boolean` | Whether the native Turbo Module is loaded and accessible |
+| `session` | `ProfilingSession \| null` | The currently active profiling session, or `null` if not profiling |
+
+Use `LanternaModule` directly when integrating with custom profiling workflows, testing frameworks, or when the React context provided by `LanternaProvider` is not suitable for your architecture.

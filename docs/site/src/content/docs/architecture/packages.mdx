@@ -1,0 +1,118 @@
+---
+title: "Package Structure"
+description: "Lanterna monorepo architecture and package dependencies"
+---
+
+## Monorepo Layout
+
+Lanterna is organized as a Bun workspace monorepo. Each package is published independently to npm under the `@lanternajs` scope.
+
+```
+packages/
+  core/                    @lanternajs/core
+  android/                 @lanternajs/android
+  ios/                     @lanternajs/ios
+  report/                  @lanternajs/report
+  cli/                     @lanternajs/cli
+  react-native/            @lanternajs/react-native
+  expo-devtools-plugin/    @lanternajs/expo-devtools-plugin
+```
+
+## Dependency Graph
+
+```
+@lanternajs/core  (no internal dependencies)
+  |
+  +-- @lanternajs/android            (depends on core)
+  +-- @lanternajs/ios                (depends on core)
+  +-- @lanternajs/report             (depends on core)
+  +-- @lanternajs/react-native       (depends on core)
+  +-- @lanternajs/expo-devtools-plugin (depends on core)
+  |
+  +-- @lanternajs/cli                (depends on core, android, ios, report)
+```
+
+All packages depend on `@lanternajs/core` for shared types, scoring logic, and metric definitions. The CLI package is the main orchestrator that pulls in platform-specific collectors and report formatters. Cross-package imports use `@lanternajs/*` workspace aliases resolved natively by Bun.
+
+## Package Details
+
+### @lanternajs/core
+
+The foundation package with no internal dependencies. Contains:
+
+- **Scoring engine** — Weighted 0-100 scoring with configurable thresholds and linear interpolation
+- **Metric types** — TypeScript definitions for all metric categories (UI FPS, JS FPS, CPU, Memory, Frame Drops, TTI)
+- **Threshold definitions** — Default and configurable thresholds for good/needs-work/poor categorization
+- **Heuristic analysis** — 11 built-in heuristic checks that identify specific performance patterns
+- **Device detection** — Shared logic for identifying connected devices across platforms
+- **Baseline comparison** — Delta calculation and regression detection between measurement sessions
+
+### @lanternajs/android
+
+Android data collection via ADB. Includes:
+
+- Process-level CPU parsing from `adb shell top`
+- Memory allocation parsing from `dumpsys meminfo` (PSS, private dirty, total)
+- Frame rendering stats from `dumpsys gfxinfo` (total frames, janky frames, percentiles)
+- Device enumeration via `adb devices`
+- Emulator and physical device detection
+
+### @lanternajs/ios
+
+iOS data collection via xctrace. Includes:
+
+- Time Profiler recording via `xcrun xctrace record`
+- XML parsing of `xcrun xctrace export` output
+- Xcode version awareness for handling format differences across releases
+- Simulator enumeration via `xcrun simctl list`
+- Device enumeration via `xcrun xctrace list devices`
+
+The xctrace XML format is underdocumented and varies between Xcode versions. The parser includes version-specific handling to maintain compatibility.
+
+### @lanternajs/report
+
+Output formatters for all six report formats:
+
+- **Terminal** — ANSI-colored terminal output with bar visualizations
+- **HTML** — Self-contained Lighthouse-style report with SVG gauge and dark mode
+- **JSON** — Structured data export for CI and scripting
+- **Markdown** — GitHub Flavored Markdown with tables and comparison deltas
+- **Perfetto** — Chrome DevTools trace event format for timeline analysis
+- **SpeedScope** — JS profiling format for flame chart visualization
+
+### @lanternajs/cli
+
+The main entry point that users install globally. Orchestrates the full measurement pipeline:
+
+- Command parsing and configuration (`measure`, `test`, `monitor`, `devices`)
+- Device detection and selection across platforms
+- Metric collection coordination (parallel Tier 1 + Tier 2)
+- Scoring and heuristic analysis via core
+- Report rendering via the report package
+- WebSocket server for real-time streaming
+- Maestro flow integration for automated testing
+- Terminal UI rendering via ink (React-based)
+
+### @lanternajs/react-native
+
+Turbo Module for in-app performance profiling:
+
+- Native frame timing via `CADisplayLink` (iOS) and `Choreographer` (Android)
+- Hermes CPU profiling interface
+- React Profiler bridge for component render timing
+- Navigation tracking with React Navigation and Expo Router support
+- Network interceptor for fetch/XHR capture
+- Bridge call tracker for native module monitoring
+- Layout tracker for Yoga pass detection
+- WebSocket client for streaming to the CLI
+- Backward compatible with both old and new React Native architectures
+
+### @lanternajs/expo-devtools-plugin
+
+Browser-based dashboard for Expo Dev Tools:
+
+- Registers as an Expo DevTools plugin
+- Receives metric streams from the in-app module
+- Renders live FPS, CPU, memory, navigation, and network data
+- Development mode only (zero production overhead)
+- Requires Expo SDK 50+

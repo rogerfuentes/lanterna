@@ -1,0 +1,76 @@
+---
+title: "Report Formats"
+description: "Overview of Lanterna's 6 output formats"
+---
+
+## Overview
+
+Lanterna supports six output formats, each suited to different workflows. The terminal format is the default; all others are available through CLI flags or the `@lanternajs/report` package API.
+
+| Format | How to Use | Best For |
+|--------|-----------|----------|
+| Terminal | Default output | Quick developer feedback during local development |
+| JSON | `--output report.json` | CI pipelines, scripting, baseline comparison |
+| HTML | `renderHtmlReport()` API | Shareable Lighthouse-style visual report |
+| Markdown | `formatMarkdownReport()` API | GitHub PR comments and documentation |
+| Perfetto | `exportPerfetto()` API | Deep trace analysis at ui.perfetto.dev |
+| SpeedScope | `exportSpeedScope()` API | JS CPU profiling at speedscope.app |
+
+## Terminal
+
+The default output when running `lanterna measure`. Renders directly in the terminal with:
+
+- Overall performance score with a colored bar visualization (green/amber/red)
+- Device information (name, platform, type)
+- Per-metric breakdown with individual scores and values
+- Comparison deltas when a `--baseline` is provided (arrows indicating improvement or regression)
+
+The terminal format uses ANSI colors and Unicode characters for visual clarity. It degrades gracefully in environments without color support.
+
+## JSON
+
+Structured output for programmatic consumption. Export with `--output path.json` or generate via the report API.
+
+The JSON schema includes: format version, timestamp, device information, overall and per-metric scores with categories, and optional sections for navigation timeline, network requests, bridge statistics, and layout data.
+
+JSON reports serve as the interchange format for CI workflows. Save a report as a baseline, then compare subsequent runs against it to detect regressions.
+
+## HTML
+
+A self-contained HTML file that requires no external dependencies. Features include:
+
+- SVG gauge displaying the overall score with color coding
+- Per-metric cards with individual scores, values, and category indicators
+- Device and session metadata
+- Comparison section with improvement/regression deltas when baseline data is available
+- Automatic dark mode via `prefers-color-scheme: dark` using CSS custom properties
+
+Generate via `renderHtmlReport()` from `@lanternajs/report`. See [HTML Report](/reports/html) for details.
+
+## Markdown
+
+GitHub Flavored Markdown output designed for posting as PR comments. Includes:
+
+- GFM-compatible tables with metric scores
+- Status indicators for each metric category
+- Comparison deltas with directional arrows
+- Regression detection markers for metrics that dropped below threshold
+
+Generate via `formatMarkdownReport()` from `@lanternajs/report`.
+
+## Perfetto
+
+Chrome DevTools-compatible trace event JSON format. Each metric type maps to a named thread for timeline visualization:
+
+- UI Thread (TID 1): UI FPS and frame drops
+- JS Thread (TID 2): JS FPS
+- System (TID 3): CPU and memory
+- Lifecycle (TID 4): TTI
+
+Open the exported file at [ui.perfetto.dev](https://ui.perfetto.dev) for interactive timeline analysis. See [Perfetto and SpeedScope](/reports/trace-formats) for details.
+
+## SpeedScope
+
+JavaScript profiling format compatible with [speedscope.app](https://www.speedscope.app). Creates one profile per metric type, allowing you to view each metric as a flame chart or time-ordered sequence.
+
+SpeedScope exports are particularly useful for analyzing JS thread behavior alongside Hermes CPU profiles. See [Perfetto and SpeedScope](/reports/trace-formats) for details.

@@ -1,0 +1,67 @@
+---
+title: Installation
+description: Install Lanterna and set up your environment.
+---
+
+## Install the CLI
+
+Install Lanterna globally using your preferred package manager:
+
+```bash
+# Bun (recommended)
+bun add -g @lanternajs/cli
+
+# npm
+npm install -g @lanternajs/cli
+```
+
+## Prerequisites
+
+### For iOS
+
+- **macOS** — iOS profiling requires macOS (any version that supports Xcode).
+- **Xcode Command Line Tools** — Lanterna uses `xcrun xctrace` under the hood. Install the tools if you haven't already:
+  ```bash
+  xcode-select --install
+  ```
+- **Simulator or physical device** — Either an iOS Simulator or a connected physical device. Verify with:
+  ```bash
+  xcrun simctl list devices booted
+  ```
+
+### For Android
+
+- **Android SDK** — The Android SDK must be installed. Android Studio is not required, but the SDK platform tools must be available.
+- **ADB in PATH** — Lanterna communicates with Android devices via `adb`. Verify it is accessible:
+  ```bash
+  adb devices
+  ```
+  You should see at least one device or emulator listed.
+- **Emulator or physical device** — Either a running Android emulator or a connected physical device with USB debugging enabled.
+
+### Runtime
+
+- **Bun v1.0+** — Lanterna is built on Bun. Install it from [bun.sh](https://bun.sh) if you don't have it yet:
+  ```bash
+  curl -fsSL https://bun.sh/install | bash
+  ```
+
+## Verify the Installation
+
+Run the following command to confirm Lanterna is installed correctly:
+
+```bash
+lanterna --help
+```
+
+You should see the full help output listing available commands and options.
+
+## Optional: In-App Module
+
+For deeper performance insights beyond what platform CLIs can provide (Tier 2 and Tier 3 metrics), you can add the `@lanternajs/react-native` package to your app. This enables real-time FPS tracking, Hermes profiling, React Profiler integration, and more.
+
+```bash
+bun add @lanternajs/react-native
+```
+
+See the [In-App Module overview](/lanterna/in-app/overview/) for setup instructions and available features.
