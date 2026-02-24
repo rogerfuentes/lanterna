@@ -159,7 +159,7 @@ function onMetrics(data) {
 
 (async function () {
 	const client = await getDevToolsPluginClientAsync(
-		'lanterna-expo-devtools-plugin'
+		'@lanternajs/expo-devtools-plugin'
 	);
 
 	setConnected(true);
