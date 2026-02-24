@@ -1,0 +1,162 @@
+---
+title: "JSON & Markdown Reports"
+description: "Structured JSON export and GitHub-friendly Markdown reports"
+---
+
+## JSON Export
+
+Export a structured JSON report by passing the `--output` flag with a `.json` file path:
+
+```bash
+lanterna measure com.example.app --output report.json
+```
+
+### Schema
+
+```json
+{
+  "version": "0.0.1",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "device": {
+    "id": "emulator-5554",
+    "name": "Pixel 6",
+    "platform": "android",
+    "type": "emulator"
+  },
+  "duration": 10,
+  "score": {
+    "overall": 72,
+    "category": "needs_work",
+    "metrics": [
+      {
+        "type": "ui_fps",
+        "value": 57.3,
+        "score": 95,
+        "category": "good"
+      },
+      {
+        "type": "js_fps",
+        "value": 48.2,
+        "score": 72,
+        "category": "needs_work"
+      }
+    ]
+  },
+  "navigation": {
+    "screens": [],
+    "totalScreenChanges": 0,
+    "averageTTID": 0
+  },
+  "network": [],
+  "bridge": {
+    "callsPerSecond": 0,
+    "totalCalls": 0,
+    "topModules": []
+  },
+  "layout": {
+    "totalLayoutEvents": 0,
+    "componentsWithExcessiveLayouts": 0
+  }
+}
+```
+
+The `navigation`, `network`, `bridge`, and `layout` sections are only populated when Tier 2/3 data is available (in-app module installed). They are omitted or empty when running Tier 1 only.
+
+## Using JSON in CI
+
+Parse the JSON output with `jq` to extract specific values for CI decision-making:
+
+```bash
+# Extract overall score
+SCORE=$(jq '.score.overall' report.json)
+
+# Fail if score is below threshold
+if [ "$SCORE" -lt 70 ]; then
+  echo "Performance score $SCORE is below threshold (70)"
+  exit 1
+fi
+```
+
+### Comparing against a baseline
+
+```bash
+# Download previous report from CI artifacts
+# ...
+
+# Run with baseline comparison
+lanterna measure com.example.app \
+  --baseline previous.json \
+  --output current.json
+
+# Check for regressions
+REGRESSION=$(jq '.score.overall < 0' delta.json)
+```
+
+### Extracting specific metrics
+
+```bash
+# Get UI FPS value
+jq '.score.metrics[] | select(.type == "ui_fps") | .value' report.json
+
+# List all metrics with poor scores
+jq '.score.metrics[] | select(.category == "poor") | .type' report.json
+
+# Get slowest screen TTID
+jq '.navigation.screens | sort_by(.ttid) | last | {screenName, ttid}' report.json
+```
+
+## Markdown Report
+
+Generate GitHub Flavored Markdown reports for posting as PR comments using the `@lanternajs/report` package:
+
+```typescript
+import { formatMarkdownReport } from '@lanternajs/report';
+
+const markdown = formatMarkdownReport(score);
+
+// With baseline comparison
+const markdownWithDelta = formatMarkdownReport(score, {
+  baseline: previousScore,
+});
+```
+
+### Features
+
+The Markdown report includes:
+
+- **GFM tables** with metric names, values, scores, and categories
+- **Status indicators** for each metric category (Good, Needs Work, Poor)
+- **Comparison deltas** with directional arrows showing improvement or regression
+- **Regression markers** that highlight metrics which dropped below their previous category
+
+### Example output
+
+```markdown
+## Lanterna Performance Report
+
+**Overall Score: 72/100** (Needs Work)
+
+| Metric | Value | Score | Status |
+|--------|-------|-------|--------|
+| UI FPS | 57.3 | 95 | Good |
+| JS FPS | 48.2 | 72 | Needs Work |
+| CPU | 34.1% | 68 | Needs Work |
+| Memory | 187 MB | 82 | Needs Work |
+| Frame Drops | 12 | 61 | Needs Work |
+| TTI | 1.2s | 55 | Needs Work |
+```
+
+### Posting to GitHub PRs
+
+Combine with the GitHub CLI or API to post the Markdown report as a PR comment:
+
+```bash
+lanterna measure com.example.app --output report.json
+
+# Generate markdown and post as PR comment
+node -e "
+  const { formatMarkdownReport } = require('@lanternajs/report');
+  const report = require('./report.json');
+  console.log(formatMarkdownReport(report.score));
+" | gh pr comment --body-file -
+```

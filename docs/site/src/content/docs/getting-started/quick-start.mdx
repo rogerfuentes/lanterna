@@ -1,0 +1,98 @@
+---
+title: Quick Start
+description: Your first performance measurement in under a minute.
+---
+
+## Measure a Running App
+
+1. **Start your app** on a connected device or emulator. Lanterna measures a running app — it does not launch the app for you.
+2. **Run the measure command** with your app's package name (Android) or bundle ID (iOS):
+
+```bash
+lanterna measure com.example.app
+```
+
+Lanterna will auto-detect the platform and connected device, collect metrics for 10 seconds, and display the results.
+
+## Understanding the Output
+
+After the measurement completes, Lanterna renders a terminal report:
+
+```
+╭───────────────────────────────────────╮
+│  lanterna v0.0.1                      │
+│                                       │
+│  Score: 72 / 100  Needs Work          │
+│  ██████████████░░░░░░  72%            │
+│                                       │
+│  Device: Pixel 6 (android, emulator)  │
+│  Duration: 10s                        │
+├───────────────────────────────────────┤
+│  UI FPS         57.3 fps    ████  95  │
+│  JS FPS         48.2 fps    ███░  62  │
+│  CPU Usage      35.1%       ███░  55  │
+│  Memory         245 MB      ███░  78  │
+│  Frame Drops    8.2%        ██░░  42  │
+│  TTI            1.8s        ████  90  │
+╰───────────────────────────────────────╯
+```
+
+### Overall Score
+
+The **composite score** (0-100) is a weighted average of all individual metric scores. It falls into one of three categories:
+
+| Score Range | Category   | Meaning                                            |
+| ----------- | ---------- | -------------------------------------------------- |
+| 75 - 100    | Good       | Performance is solid across all measured dimensions |
+| 40 - 74     | Needs Work | Some metrics are below optimal thresholds           |
+| 0 - 39      | Poor       | Significant performance issues detected             |
+
+### Per-Metric Breakdown
+
+Each row shows:
+
+- **Metric name** — What is being measured (e.g., UI FPS, CPU Usage).
+- **Raw value** — The measured value in its native unit.
+- **Bar + score** — A visual bar and individual 0-100 score for that metric.
+
+## Export a JSON Report
+
+Save the measurement results to a JSON file for further analysis or CI integration:
+
+```bash
+lanterna measure com.example.app --output report.json
+```
+
+The JSON report contains all raw samples, computed scores, device metadata, and timestamps.
+
+## Compare Against a Baseline
+
+Detect performance regressions by comparing the current measurement against a previous report:
+
+```bash
+lanterna measure com.example.app --baseline previous.json
+```
+
+Lanterna will highlight metrics that have regressed beyond configurable thresholds and exit with code `1` if a regression is detected. This makes it straightforward to use as a CI gate.
+
+To save the current run as a baseline for future comparisons:
+
+```bash
+lanterna measure com.example.app --baseline previous.json --output current.json
+```
+
+## Profile During E2E Tests
+
+Combine performance measurement with Maestro E2E test flows:
+
+```bash
+lanterna test --maestro flow.yaml
+```
+
+Lanterna will run the Maestro flow and collect performance metrics in parallel, giving you both pass/fail test results and a performance score.
+
+## Next Steps
+
+- [CLI Reference](/lanterna/cli/overview/) — Full command documentation and all available options.
+- [Scoring Model](/lanterna/scoring/) — How the 0-100 score is calculated, metric weights, and thresholds.
+- [Guides](/lanterna/guides/) — Recipes for CI integration, baseline comparison, and advanced profiling.

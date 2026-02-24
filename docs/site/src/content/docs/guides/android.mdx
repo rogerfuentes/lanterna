@@ -1,0 +1,114 @@
+---
+title: "Android Profiling"
+description: "How Lanterna collects performance metrics on Android"
+---
+
+## Prerequisites
+
+Before profiling an Android app with Lanterna, ensure the following:
+
+- **Android SDK** is installed and `adb` is available in your PATH
+- **USB debugging** is enabled on the target device (Settings > Developer Options > USB Debugging)
+- The target app is **installed and running** on the device or emulator
+
+Verify your setup:
+
+```bash
+adb devices
+```
+
+You should see your device or emulator listed with a `device` status. If it shows `unauthorized`, check the device screen for a USB debugging authorization prompt.
+
+## How Metrics Are Collected
+
+Lanterna runs three ADB commands **in parallel** to collect performance data with minimal overhead:
+
+### Process Discovery
+
+Before collecting metrics, Lanterna identifies the target app's process ID:
+
+```bash
+adb shell pidof com.example.app
+```
+
+This PID is used to scope all subsequent metric collection to the target app.
+
+### CPU Usage — `adb shell top -H`
+
+```bash
+adb shell top -H -b -n 1 -p <pid>
+```
+
+The `-H` flag reports CPU usage per thread. Lanterna sums all threads belonging to the app process to compute total CPU utilization as a percentage.
+
+### Memory — `dumpsys meminfo`
+
+```bash
+adb shell dumpsys meminfo <package>
+```
+
+Reports detailed memory allocation including Java heap, native heap, code, stack, graphics, and system memory. Lanterna extracts the total PSS (Proportional Set Size) value as the memory metric.
+
+### UI FPS and Frame Drops — `dumpsys gfxinfo`
+
+```bash
+adb shell dumpsys gfxinfo <package>
+```
+
+Reports the total number of rendered frames and the number of janky frames (frames that exceeded the 16.6ms budget). Lanterna derives two metrics from this data:
+
+- **UI Thread FPS:** Effective frame rate based on the janky frame ratio
+- **Frame Drop Rate:** Percentage of total frames that were janky
+
+## Emulator vs Physical Device
+
+Both Android emulators and physical devices are fully supported.
+
+**Physical devices** generally provide more realistic performance data because emulators run on desktop hardware with different characteristics. Emulators are useful for CI environments and quick iteration, but final performance validation should be done on real hardware.
+
+When multiple devices are connected, Lanterna will prompt you to select one. You can also specify a device directly:
+
+```bash
+lanterna measure com.example.app --device <device-id>
+```
+
+To list available device IDs:
+
+```bash
+adb devices
+```
+
+## Troubleshooting
+
+### "No device found"
+
+Lanterna could not detect a connected Android device or running emulator.
+
+- Run `adb devices` to verify the connection
+- For emulators, ensure the emulator is fully booted (wait for the home screen)
+- Try `adb kill-server && adb start-server` to reset the ADB daemon
+- Check that only one ADB server is running (Android Studio and CLI can conflict)
+
+### "App not running"
+
+Lanterna requires the target app to be running before starting a measurement session. It does not launch the app automatically.
+
+- Launch the app manually on the device or emulator
+- Verify the package name is correct: `adb shell pm list packages | grep example`
+- For cold-start TTI measurement, Lanterna will handle the launch sequence
+
+### Permission Issues
+
+Some metrics require specific device configurations:
+
+- **USB debugging** must be enabled in Developer Options
+- On Android 11+, **wireless debugging** requires separate pairing
+- Some manufacturer skins restrict `dumpsys` access; try on a stock Android emulator if you encounter issues
+
+### Inaccurate FPS Data
+
+If `dumpsys gfxinfo` returns zero frames:
+
+- Ensure the app is actively rendering (interact with it during measurement)
+- Some apps disable hardware acceleration, which prevents gfxinfo from collecting frame data
+- Try scrolling a list or triggering an animation during the measurement window

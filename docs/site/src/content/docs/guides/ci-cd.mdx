@@ -1,0 +1,116 @@
+---
+title: "CI/CD Integration"
+description: "Integrate Lanterna performance checks into your CI pipeline"
+---
+
+## Overview
+
+Lanterna is designed to run in CI environments, enabling automated performance regression detection on every pull request. The typical workflow is:
+
+1. Run `lanterna measure` with `--output` to export a JSON report
+2. Check the exit code or score against a threshold
+3. Optionally post results as a PR comment
+
+## GitHub Action
+
+The simplest way to integrate Lanterna into a GitHub Actions workflow is with the official action:
+
+```yaml
+name: Performance Check
+on: [pull_request]
+jobs:
+  lanterna:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: user/lanterna-action@v1
+        with:
+          package: com.example.app
+          duration: '15'
+          platform: android
+          score-threshold: '60'
+```
+
+### Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `package` | Yes | - | App package name or bundle ID |
+| `duration` | No | `10` | Measurement duration in seconds |
+| `platform` | No | - | Target platform (`ios` or `android`) |
+| `baseline-artifact` | No | `lanterna-baseline` | Artifact name for baseline report |
+| `score-threshold` | No | `40` | Minimum score to pass (0-100) |
+| `comment` | No | `true` | Post results as PR comment |
+
+### Outputs
+
+| Output | Description |
+|--------|-------------|
+| `score` | Overall performance score (0-100) |
+| `category` | Score category (`good`, `needs_work`, `poor`) |
+| `report-path` | Path to the JSON report file |
+
+## How It Works
+
+The GitHub Action performs the following steps:
+
+1. **Install dependencies** — Sets up Bun and installs the `@lanternajs/cli` package globally
+2. **Download baseline** — Retrieves the baseline artifact from the most recent main branch run (if available)
+3. **Run measurement** — Executes `lanterna measure` against the running app with the specified duration
+4. **Upload report** — Saves the JSON report as a workflow artifact for future baseline comparisons
+5. **Check threshold** — Compares the overall score against `score-threshold`. If the score is below the threshold, the step fails
+6. **Post comment** — If `comment` is enabled, posts a formatted markdown summary to the pull request
+
+## Generic CI
+
+For CI systems other than GitHub Actions, use the CLI directly in a shell script:
+
+```bash
+# Install Lanterna
+bun add -g @lanternajs/cli
+
+# Run measurement and export JSON
+lanterna measure com.example.app --output report.json
+
+# Extract score and check threshold
+SCORE=$(cat report.json | jq '.score.overall')
+if [ "$SCORE" -lt 60 ]; then
+  echo "Performance score $SCORE is below threshold"
+  exit 1
+fi
+```
+
+### Requirements for CI Environments
+
+- **Android:** The CI runner needs ADB and a running emulator or connected device. Most CI services offer Android emulator images.
+- **iOS:** The CI runner must be macOS with Xcode installed. Use `macos-latest` or equivalent.
+- **Bun:** Required as the JavaScript runtime. Install via `curl -fsSL https://bun.sh/install | bash`.
+
+### Caching
+
+To speed up CI runs, cache the Bun global install directory:
+
+```yaml
+- uses: actions/cache@v4
+  with:
+    path: ~/.bun
+    key: bun-${{ runner.os }}-lanterna
+```
+
+## PR Comments
+
+Use the markdown report format from `@lanternajs/report` to post formatted performance results as pull request comments. This provides immediate visibility into performance changes without leaving the PR review flow.
+
+```typescript
+import { formatMarkdownReport } from "@lanternajs/report";
+
+const markdown = formatMarkdownReport(report);
+// Post `markdown` as a PR comment via your CI platform's API
+```
+
+The markdown report includes:
+
+- Overall score with category badge
+- Per-metric scores with delta from baseline (if provided)
+- Triggered heuristics with severity indicators
+- Comparison summary showing regressions and improvements

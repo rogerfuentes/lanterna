@@ -1,0 +1,96 @@
+---
+title: CLI Overview
+description: Lanterna command reference.
+---
+
+## Commands
+
+Lanterna provides three commands for different performance profiling workflows:
+
+| Command   | Description                                                        |
+| --------- | ------------------------------------------------------------------ |
+| `measure` | Collect performance metrics for a running app                      |
+| `test`    | Run a Maestro E2E flow and collect performance metrics in parallel |
+| `monitor` | Start a live monitoring dashboard via WebSocket                    |
+
+See the dedicated page for each command for full option details:
+
+- [lanterna measure](/lanterna/cli/measure/)
+- [lanterna test](/lanterna/cli/test/)
+- [lanterna monitor](/lanterna/cli/monitor/)
+
+## Global Behavior
+
+### Platform Auto-Detection
+
+When `--platform` is not specified, Lanterna checks for connected devices in the following order:
+
+1. Query `adb devices` for connected Android devices or emulators.
+2. Query `xcrun simctl list devices booted` for running iOS Simulators.
+3. Select the first available device from whichever platform responds.
+
+If devices are connected on both platforms, Android is selected by default. Use `--platform ios` or `--platform android` to override.
+
+### Device Selection
+
+When multiple devices are connected on the same platform, Lanterna auto-selects the first one listed. To target a specific device, pass its ID:
+
+```bash
+# Android: use the device serial from `adb devices`
+lanterna measure com.example.app --device emulator-5554
+
+# iOS: use the simulator UDID from `xcrun simctl list`
+lanterna measure com.example.app --device 3A4B5C6D-7E8F-9A0B-C1D2-E3F4A5B6C7D8
+```
+
+### Exit Codes
+
+| Code | Meaning                                                                  |
+| ---- | ------------------------------------------------------------------------ |
+| `0`  | Measurement completed successfully and the score is not in the Poor range |
+| `1`  | Score is Poor, or a regression was detected (when using `--baseline`)     |
+
+This behavior makes Lanterna suitable as a CI gate — a non-zero exit code signals that performance has degraded below acceptable thresholds.
+
+## Full Help Output
+
+```
+lanterna — Performance profiler for React Native apps
+
+Usage:
+  lanterna measure <package> [options]
+  lanterna test --maestro <flow.yaml> [options]
+  lanterna monitor [options]
+
+Commands:
+  measure    Collect performance metrics for a running app
+  test       Run a Maestro E2E flow and collect performance metrics
+  monitor    Start live monitoring dashboard (WebSocket server)
+
+Options (measure):
+  --duration <seconds>    Measurement duration (default: 10)
+  --platform <ios|android> Force platform (auto-detect if omitted)
+  --device <id>           Target device ID (auto-select if omitted)
+  --output <path>         Export JSON report to file
+  --baseline <path>       Compare against a previous JSON report
+  --help                  Show this help message
+
+Options (test):
+  --maestro <flow.yaml>   Path to Maestro flow YAML (required)
+  --duration <seconds>    Measurement duration (default: 10)
+  --platform <ios|android> Force platform (auto-detect if omitted)
+  --device <id>           Target device ID (auto-select if omitted)
+  --output <path>         Export JSON report to file
+
+Options (monitor):
+  --port <number>         WebSocket server port (default: 8347)
+
+Examples:
+  lanterna measure com.example.app
+  lanterna measure com.example.app --duration 15
+  lanterna measure com.example.app --platform ios --output report.json
+  lanterna test --maestro login-flow.yaml
+  lanterna test --maestro login-flow.yaml --duration 30 --output report.json
+  lanterna monitor
+  lanterna monitor --port 9000
+```

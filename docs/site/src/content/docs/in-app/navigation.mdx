@@ -1,0 +1,110 @@
+---
+title: "Navigation Tracking"
+description: "Per-screen performance metrics with React Navigation and Expo Router"
+---
+
+## Automatic Detection
+
+When using Expo Router, `LanternaProvider` automatically detects navigation state changes without any additional setup. The provider listens for route changes through the Expo Router internals and records per-screen metrics transparently.
+
+```tsx
+import { LanternaProvider } from '@lanternajs/react-native';
+
+// Expo Router: no extra configuration needed
+export default function App() {
+  return (
+    <LanternaProvider>
+      <Stack />
+    </LanternaProvider>
+  );
+}
+```
+
+## React Navigation Integration
+
+For React Navigation, pass a ref to both the `NavigationContainer` and `LanternaProvider`:
+
+```tsx
+import { NavigationContainer } from '@react-navigation/native';
+import { LanternaProvider } from '@lanternajs/react-native';
+import { useRef } from 'react';
+
+export default function App() {
+  const navigationRef = useRef(null);
+
+  return (
+    <LanternaProvider navigationRef={navigationRef}>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator>
+          {/* your screens */}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </LanternaProvider>
+  );
+}
+```
+
+The navigation ref allows Lanterna to subscribe to `state` events on the navigation container and track each screen transition.
+
+## Per-Screen Metrics
+
+Each screen visit records the following data:
+
+| Metric | Type | Description |
+|--------|------|-------------|
+| `screenName` | `string` | The route name as defined in your navigator |
+| `visitedAt` | `number` | Timestamp when the screen became active |
+| `leftAt` | `number \| null` | Timestamp when the user navigated away (`null` if still active) |
+| `ttid` | `number` | Time to Initial Display in milliseconds |
+| `ttfd` | `number` | Time to Full Display in milliseconds |
+| `renderDuration` | `number` | Total React render time for the screen component tree |
+| `timeOnScreen` | `number` | Duration the user spent on this screen |
+
+**TTID** measures the time from navigation start to the first meaningful paint of the screen. **TTFD** extends this to include any asynchronous data loading that completes the screen content.
+
+## NavigationTracker API
+
+Access the navigation tracker through the `useLanterna` hook to query the full navigation timeline:
+
+```typescript
+const { navigationTracker } = useLanterna();
+
+const timeline = navigationTracker.getTimeline();
+```
+
+The returned timeline object contains:
+
+```typescript
+{
+  screens: ScreenMetricsData[],    // All recorded screen visits
+  currentScreen: string | null,    // Currently active screen name
+  totalScreenChanges: number,      // Total navigation events
+  averageTTID: number,             // Average TTID across all screens
+  slowestScreen: {
+    screenName: string,
+    ttid: number
+  }
+}
+```
+
+### Querying individual screens
+
+```typescript
+// Get metrics for a specific screen
+const homeMetrics = navigationTracker
+  .getTimeline()
+  .screens.filter(s => s.screenName === 'Home');
+
+// Get the current screen's metrics
+const current = navigationTracker.getCurrentScreenMetrics();
+```
+
+## Heuristic Integration
+
+The built-in `slow-screen-ttid` heuristic automatically analyzes navigation data and flags screens with a TTID exceeding 500ms. When triggered, the heuristic report includes:
+
+- The screen name and measured TTID
+- A severity level based on how far the TTID exceeds the threshold
+- A recommendation to investigate the screen's initial render path
+
+This heuristic runs automatically during scoring and appears in the final report alongside other performance findings.

@@ -1,0 +1,190 @@
+---
+title: "Heuristics"
+description: "11 built-in performance heuristics with actionable React Native recommendations"
+---
+
+## Overview
+
+After computing the performance score, Lanterna runs **11 built-in heuristics** that analyze the measurement session and produce actionable, React Native-specific recommendations. Each heuristic examines one or more metrics and, when triggered, provides concrete suggestions for improving performance.
+
+Heuristics are sorted by severity in the report output, so the most critical issues appear first.
+
+## Severity Levels
+
+Each triggered heuristic is assigned one of three severity levels:
+
+| Severity | Condition | Meaning |
+|----------|-----------|---------|
+| **Critical** | Metric score < 40 | Significant problem requiring immediate attention |
+| **Warning** | Metric score < 75 | Noticeable issue that should be addressed |
+| **Info** | Diagnostic | Contextual insight, not necessarily a problem |
+
+## Heuristic Reference
+
+### low-ui-fps — Low UI Thread Frame Rate
+
+**Triggers:** UI FPS score < 75
+
+**Message:** Heavy layout work or excessive re-renders on the main thread are degrading rendering performance.
+
+**Suggestions:**
+
+- Wrap components with `React.memo()` to prevent unnecessary re-renders
+- Use `useMemo()` and `useCallback()` for expensive computations and callback references
+- Enable `removeClippedSubviews` on FlatList for long scrollable lists
+- Provide `getItemLayout` to FlatList to skip async layout measurement
+
+---
+
+### low-js-fps — JS Thread Bottleneck
+
+**Triggers:** JS FPS score < 75
+
+**Message:** The JavaScript thread is overloaded from synchronous work, causing delayed UI updates and sluggish interactions.
+
+**Suggestions:**
+
+- Defer non-critical work with `InteractionManager.runAfterInteractions()`
+- Use `requestAnimationFrame()` for animation-related updates
+- Offload heavy computations to web workers or native modules
+
+---
+
+### high-cpu — High CPU Utilization
+
+**Triggers:** CPU score < 75
+
+**Message:** Sustained high CPU usage drains battery and causes thermal throttling, which further degrades performance over time.
+
+**Suggestions:**
+
+- Run the Hermes sampling profiler to identify hot functions
+- Memoize callbacks with `useCallback()` to avoid unnecessary work
+- Memoize Redux/Zustand selectors to prevent redundant state derivations
+- Audit `useEffect` dependency arrays for over-firing effects
+
+---
+
+### high-memory — Elevated Memory Consumption
+
+**Triggers:** Memory score < 75
+
+**Message:** High memory consumption increases the risk of OOM kills, especially on lower-end devices with limited RAM.
+
+**Suggestions:**
+
+- Enable `removeClippedSubviews` on long lists to reclaim off-screen memory
+- Use `react-native-fast-image` for efficient image caching and memory management
+- Clean up event listeners and subscriptions in `useEffect` cleanup functions
+- Profile with platform memory tools to find leaked references
+
+---
+
+### excessive-frame-drops — Excessive Frame Drops
+
+**Triggers:** Frame Drops score < 75
+
+**Message:** Users perceive jank during scrolling, transitions, and animations due to inconsistent frame delivery.
+
+**Suggestions:**
+
+- Use `react-native-screens` for native navigation stack rendering
+- Tune FlatList with `windowSize` and `maxToRenderPerBatch` props
+- Move animations to the UI thread with `react-native-reanimated` worklets
+- Avoid synchronous layout reads during scroll handlers
+
+---
+
+### slow-tti — Slow Time to Interactive
+
+**Triggers:** TTI score < 75
+
+**Message:** Users expect interactivity within 2 seconds. Slow startup is a leading cause of app abandonment.
+
+**Suggestions:**
+
+- Code-split with `React.lazy()` and Suspense to defer non-critical screens
+- Ensure Hermes is enabled (pre-compiled bytecode reduces parse time)
+- Use inline requires or RAM bundles to defer module initialization
+- Reduce the depth of the initial component tree
+
+---
+
+### js-ui-correlation — JS-UI Thread Correlation
+
+**Triggers:** Both JS FPS and UI FPS scores < 75
+
+**Severity:** Info (diagnostic)
+
+**Message:** Both threads struggling simultaneously typically indicates a bridge bottleneck or synchronous native calls serializing work across threads.
+
+**Suggestions:**
+
+- Use `MessageQueue.spy()` to inspect bridge traffic volume and patterns
+- Migrate hot paths from bridge calls to JSI or async native modules
+- Move animations off the bridge with `react-native-reanimated` worklets
+- Consider TurboModules for frequently called native interfaces
+
+---
+
+### slow-screen-ttid — Slow Screen TTID
+
+**Triggers:** Any screen TTID > 500ms (requires Tier 2 navigation data from the in-app module)
+
+**Severity:** Critical if > 1000ms, Warning if 500-1000ms
+
+**Message:** Individual screens should display meaningful content almost instantly after navigation. Slow screen transitions degrade perceived app speed.
+
+**Suggestions:**
+
+- Implement code splitting per route to avoid loading unused screens
+- Use skeleton placeholders to show immediate visual feedback
+- Defer data fetching until after the initial render completes
+- Pre-fetch data for likely next screens during idle time
+
+---
+
+### excessive-network — Excessive Network Activity
+
+**Triggers:** More than 10 requests during measurement OR any single request taking longer than 3 seconds (requires Tier 3 network data)
+
+**Message:** Excessive or slow network requests block rendering and delay interactivity, especially on slower connections.
+
+**Suggestions:**
+
+- Batch multiple API requests into single endpoints where possible
+- Implement response caching with appropriate cache headers
+- Use pagination or infinite scroll instead of loading full datasets
+- Apply stale-while-revalidate patterns for non-critical data
+
+---
+
+### high-bridge-traffic — High Bridge Call Frequency
+
+**Triggers:** Bridge calls exceed 50 per second (requires Tier 3 bridge data)
+
+**Severity:** Critical if > 100 calls/sec, Warning if > 50 calls/sec
+
+**Message:** High-frequency bridge calls create serialization overhead that blocks both the JavaScript and UI threads.
+
+**Suggestions:**
+
+- Migrate to JSI or TurboModules to bypass the bridge entirely
+- Batch multiple bridge calls into single native module invocations
+- Use `setNativeProps` for direct native view updates without re-render
+- Move animated values to native with `react-native-reanimated` worklets
+
+---
+
+### excessive-layouts — Excessive Layout Passes
+
+**Triggers:** Components performing more than 3 layout passes (requires Tier 3 layout data)
+
+**Message:** Excessive layout recalculations cause jank and waste CPU cycles on redundant measurement work.
+
+**Suggestions:**
+
+- Use `StyleSheet.create()` for static styles to enable caching
+- Avoid dynamic inline styles that trigger re-layout on every render
+- Check for layout thrashing caused by reading and writing layout properties in sequence
+- Consider fixed dimensions for known-size components to skip measurement

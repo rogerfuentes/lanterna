@@ -1,0 +1,62 @@
+---
+title: "Expo DevTools Plugin"
+description: "Browser-based performance dashboard for Expo projects"
+---
+
+## Overview
+
+`@lanternajs/expo-devtools-plugin` provides a browser-based performance dashboard that integrates directly with Expo Dev Tools. It gives you a live view of your app's performance metrics without leaving the browser, complementing the CLI-based monitoring workflow.
+
+## Installation
+
+```bash
+npx expo install @lanternajs/expo-devtools-plugin
+```
+
+This installs the plugin along with its peer dependency on `expo/devtools`.
+
+## Usage
+
+If you are already using `LanternaProvider` from `@lanternajs/react-native`, the Expo DevTools plugin auto-connects when `expo/devtools` is available in the runtime. No additional code is required.
+
+For standalone usage without the full provider, use the hook directly:
+
+```typescript
+import { useLanternaDevTools } from '@lanternajs/expo-devtools-plugin';
+
+export default function App() {
+  useLanternaDevTools();
+
+  return <YourApp />;
+}
+```
+
+The hook registers the plugin with Expo's devtools system and begins streaming metrics to the browser dashboard.
+
+## Accessing the Dashboard
+
+1. Start your Expo development server (`npx expo start`)
+2. Press **Shift+M** in the Expo CLI to open the Dev Tools menu
+3. Select **Lanterna** from the list of available plugins
+
+The dashboard opens in your default browser alongside other Expo Dev Tools panels.
+
+## Dashboard Features
+
+The Lanterna DevTools dashboard displays the following in real time:
+
+- **FPS Graphs** — Live UI and JS thread frame rate charts with threshold indicators
+- **CPU/Memory Charts** — System resource usage over time with trend lines
+- **Current Screen** — Active screen name with TTID measurement
+- **Network Summary** — Recent requests with status codes, durations, and response sizes
+- **Bridge Statistics** — Calls per second and top native modules by volume
+
+All data refreshes automatically as new metric snapshots arrive from the app. The dashboard retains a rolling window of recent data for trend visibility.
+
+## Requirements
+
+- **Expo SDK 50+** (peer dependency on `expo/devtools`)
+- **Development mode only** — The plugin is automatically disabled in production builds
+- **LanternaProvider or useLanternaDevTools** — At least one must be active in your app
+
+The plugin has no effect in production builds. The `expo/devtools` module is stripped during production bundling, so there is no runtime cost or bundle size impact in release builds.

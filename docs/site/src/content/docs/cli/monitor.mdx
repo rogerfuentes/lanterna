@@ -1,0 +1,81 @@
+---
+title: lanterna monitor
+description: Live performance monitoring dashboard.
+---
+
+## Synopsis
+
+```bash
+lanterna monitor [options]
+```
+
+## Description
+
+The `monitor` command starts a WebSocket server and renders a live terminal dashboard showing connected apps and their real-time performance metrics. As apps connect via the `@lanternajs/react-native` in-app module, the dashboard updates continuously with current FPS, CPU, memory, and navigation data.
+
+This is useful during development for keeping an eye on performance as you interact with your app, without needing to run discrete measurement sessions.
+
+## Options
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--port <number>` | `8347` | WebSocket server port |
+
+## Requirements
+
+The app must include the `@lanternajs/react-native` in-app module with `LanternaProvider` configured to connect to the monitor's WebSocket server. Without instrumentation, the monitor will start but no data will appear.
+
+See the [In-App Module overview](/lanterna/in-app/overview/) for setup instructions.
+
+## Dashboard
+
+Once an instrumented app connects, the terminal renders a live-updating dashboard:
+
+```
+╭─────────────────────────────────────────────╮
+│  lanterna monitor                           │
+│  Port: 8347  Status: running                │
+├─────────────────────────────────────────────┤
+│  com.example.myapp                          │
+│  Pixel 6 (android)                          │
+│  Screen: ProfileScreen                      │
+│  UI FPS: 58.2  Drops: 3                     │
+│  JS FPS: 55.1                               │
+│  CPU: 28.3%                                 │
+│  Memory: 245 MB                             │
+╰─────────────────────────────────────────────╯
+```
+
+The dashboard shows:
+
+- **App identifier** — The connected app's package name or bundle ID.
+- **Device info** — Device name, platform, and whether it is an emulator or physical device.
+- **Current screen** — The active React Navigation screen name (when available).
+- **UI FPS** — Native UI thread frame rate and drop count.
+- **JS FPS** — JavaScript thread frame rate.
+- **CPU** — Current CPU usage percentage.
+- **Memory** — Current memory consumption.
+
+Multiple apps can connect simultaneously. Each connected app appears as a separate section in the dashboard.
+
+## Examples
+
+### Start with default port
+
+```bash
+lanterna monitor
+```
+
+### Start on a custom port
+
+```bash
+lanterna monitor --port 9000
+```
+
+When using a custom port, make sure the `LanternaProvider` in your app is configured to connect to the same port:
+
+```tsx
+<LanternaProvider wsPort={9000}>
+  <App />
+</LanternaProvider>
+```

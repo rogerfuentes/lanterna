@@ -1,0 +1,78 @@
+---
+title: lanterna test
+description: Profile performance during Maestro E2E test flows.
+---
+
+## Synopsis
+
+```bash
+lanterna test --maestro <flow.yaml> [options]
+```
+
+## Description
+
+The `test` command runs a Maestro E2E flow while collecting performance metrics in parallel. It combines Tier 1 (platform CLI) metrics with Tier 2 (in-app module via WebSocket) data when the `@lanternajs/react-native` package is installed in the app. After the flow completes, Lanterna reports both the Maestro pass/fail status and the performance score.
+
+This is the recommended approach for performance regression testing in CI, as it produces deterministic, repeatable measurements tied to specific user flows.
+
+## Required Option
+
+### `--maestro <flow.yaml>` / `-m`
+
+Path to the Maestro flow YAML file. This is required — the test command cannot run without a flow definition.
+
+```bash
+lanterna test --maestro flows/login-flow.yaml
+```
+
+## Options
+
+| Flag | Alias | Default | Description |
+| --- | --- | --- | --- |
+| `--maestro <flow.yaml>` | `-m` | — | Path to Maestro flow YAML file (required) |
+| `--duration <seconds>` | `-d` | `10` | Measurement duration in seconds |
+| `--platform <ios\|android>` | `-p` | auto-detect | Force the target platform |
+| `--device <id>` | — | auto-select | Target a specific device by its ID |
+| `--output <path>` | `-o` | — | Export the JSON report to a file |
+| `--help` | `-h` | — | Show help |
+
+## How It Works
+
+1. **Parse the Maestro flow** — Read the YAML file and extract the `appId` (used as a fallback if `<package>` is not provided on the command line).
+2. **Detect and select device** — Query connected devices and select the target based on `--platform` and `--device` flags, or auto-detect.
+3. **Start WebSocket server** — Open a WebSocket server on port 8347 to receive Tier 2 in-app metrics from `@lanternajs/react-native` if the app has it installed.
+4. **Start Tier 1 metric collection** — Begin collecting metrics via platform CLIs (`adb` on Android, `xcrun xctrace` on iOS).
+5. **Launch Maestro flow** — Execute the Maestro flow in parallel with metric collection.
+6. **Merge samples** — Combine Tier 1 (platform CLI) and Tier 2 (in-app module) metric samples, aligning timestamps.
+7. **Calculate weighted score** — Compute the composite 0-100 score using the standard weighting model.
+8. **Run heuristic analysis** — Analyze collected data against 11 heuristics and generate actionable recommendations.
+9. **Display results** — Render the terminal report with metric breakdown, recommendations, and the Maestro pass/fail status.
+
+## Examples
+
+### Run a flow with default settings
+
+```bash
+lanterna test --maestro flows/login-flow.yaml
+```
+
+### Extended duration with JSON export
+
+```bash
+lanterna test --maestro flows/checkout-flow.yaml --duration 30 --output report.json
+```
+
+### Target a specific iOS device
+
+```bash
+lanterna test --maestro flows/onboarding.yaml --platform ios --device 3A4B5C6D-7E8F-9A0B-C1D2-E3F4A5B6C7D8
+```
+
+## Exit Codes
+
+| Code | Meaning |
+| ---- | ------- |
+| `0`  | Maestro flow PASSED and the performance score is not in the Poor range |
+| `1`  | Maestro flow FAILED, or the performance score is Poor (score < 40) |
+
+If either condition triggers a non-zero exit, the command exits with `1`. This allows CI pipelines to gate on both functional correctness and performance in a single step.

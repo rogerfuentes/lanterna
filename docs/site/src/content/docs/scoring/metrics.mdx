@@ -1,0 +1,96 @@
+---
+title: "Metrics Reference"
+description: "Detailed reference for all performance metrics and their thresholds"
+---
+
+## Metric Weights
+
+Each metric contributes to the overall score according to the following weights. The weights reflect the relative impact each metric has on perceived app quality.
+
+| Metric | Weight | Description |
+|--------|--------|-------------|
+| UI Thread FPS | 25% | Main thread rendering performance |
+| JS Thread FPS | 20% | JavaScript thread responsiveness |
+| CPU Usage | 15% | System resource efficiency |
+| Memory | 15% | RAM consumption |
+| Frame Drop Rate | 15% | Jank perception |
+| Time to Interactive | 10% | App startup speed |
+
+UI and JS FPS carry the most weight because frame rate is the most directly perceptible performance characteristic for end users. TTI carries the least weight because it only applies to cold-start scenarios.
+
+## Thresholds
+
+These are the default good/poor thresholds used for scoring. Values at or better than "Good" score 100. Values at or worse than "Poor" score 0. Values in between are linearly interpolated.
+
+| Metric | Good | Poor | Direction | Unit |
+|--------|------|------|-----------|------|
+| UI Thread FPS | ≥ 57 | ≤ 45 | Higher is better | fps |
+| JS Thread FPS | ≥ 57 | ≤ 45 | Higher is better | fps |
+| CPU Usage | ≤ 30% | ≥ 60% | Lower is better | % |
+| Memory | ≤ 300 | ≥ 500 | Lower is better | MB |
+| Frame Drop Rate | ≤ 5% | ≥ 15% | Lower is better | % |
+| TTI | ≤ 2s | ≥ 4s | Lower is better | s |
+
+All thresholds can be overridden via the `.lanternarc` configuration file. See [How Scoring Works](/scoring/how-it-works) for details.
+
+## Per-Metric Deep Dive
+
+### UI Thread FPS
+
+Measures the main (UI) thread frame rate, which directly determines how smooth animations, transitions, and scrolling feel to the user.
+
+**Collection method:**
+
+- **Android:** Collected via `dumpsys gfxinfo`, which reports total rendered frames and janky frames. Lanterna computes the effective FPS from the janky frame ratio.
+- **iOS:** Collected via `xcrun xctrace` using the Time Profiler template. Frame timing data is extracted from the exported trace XML.
+
+**Why 57 fps?** The "good" threshold of 57 fps allows approximately 5% headroom below the 60 fps target. Most users cannot perceive the difference between 57 and 60 fps, but anything below 57 starts to become noticeable — especially during scrolling and animations.
+
+### JS Thread FPS
+
+Measures JavaScript thread responsiveness, which reflects how efficiently the JS run loop processes tasks.
+
+**Collection method:** Available via the Tier 2 in-app module (`@lanternajs/react-native`). The module measures the time between consecutive JS thread ticks and reports an effective frame rate.
+
+**What it indicates:** A low JS FPS typically means synchronous JavaScript work is blocking the run loop. Common causes include large state updates, unoptimized selectors, synchronous storage access, and heavy computations during render.
+
+### CPU Usage
+
+Percentage of CPU resources consumed by the app process during measurement.
+
+**Collection method:**
+
+- **Android:** `adb shell top -H` reports CPU usage per thread. Lanterna sums all threads belonging to the app process to compute total CPU utilization.
+- **iOS:** `xcrun xctrace` with the Time Profiler template provides weight values in nanoseconds, which are converted to CPU percentage relative to the measurement duration.
+
+**Why it matters:** Sustained high CPU usage drains battery life, triggers thermal throttling (which further degrades performance), and competes with other processes on the device.
+
+### Memory
+
+Peak RAM consumption of the app process in megabytes during the measurement session.
+
+**Collection method:**
+
+- **Android:** `dumpsys meminfo <package>` reports detailed memory allocation including Java heap, native heap, and graphics memory.
+- **iOS:** `top -l 1 -pid <pid> -stats pid,rsize` reports the resident set size of the process.
+
+**Why it matters:** High memory consumption increases the risk of the operating system killing the app (OOM), particularly on lower-end devices with limited RAM. It also affects multitasking behavior — apps with high memory usage are more likely to be evicted from the background.
+
+### Frame Drop Rate
+
+The percentage of frames that were "janky" — frames that took longer than 16.6ms to render (the budget for 60 fps).
+
+**Collection method:**
+
+- **Android:** `dumpsys gfxinfo` directly reports the count of janky frames out of total frames rendered.
+- **iOS:** Derived from frame timing data in the xctrace export.
+
+**Why it matters:** Even if average FPS is acceptable, individual frame drops create a perception of jank. A steady 55 fps feels smoother than 60 fps with periodic dropped frames. This metric captures the consistency of rendering performance.
+
+### TTI (Time to Interactive)
+
+Time from app launch to an interactive state, measured in seconds. This metric is most relevant when profiling from a cold start.
+
+**Collection method:** Measured by timing the interval from process launch to the point where the app responds to user input. On Android, this correlates with the `Displayed` timestamp from `adb logcat`. When using the Tier 2 in-app module, TTI can be measured more precisely using navigation events.
+
+**Why it matters:** Users expect apps to be interactive within 2 seconds. Slow startup is the leading cause of app abandonment. TTI captures the full cost of initialization — bundle parsing, native module setup, initial render, and data fetching.

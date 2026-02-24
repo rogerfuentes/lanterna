@@ -1,0 +1,122 @@
+---
+title: "Baseline Comparison"
+description: "Detect performance regressions by comparing against previous measurements"
+---
+
+## Overview
+
+Baseline comparison lets you detect performance regressions by comparing the current measurement against a previously saved JSON report. Instead of relying solely on absolute thresholds, you can track how performance changes relative to a known-good state — making it easy to catch regressions introduced by specific code changes.
+
+## Creating a Baseline
+
+Run a measurement and save the output as a JSON file:
+
+```bash
+lanterna measure com.example.app --output baseline.json
+```
+
+This produces a JSON report containing all metric scores and raw values. Store this file as a CI artifact, commit it to your repository, or save it in any location accessible during future runs.
+
+For the most representative baselines:
+
+- Run on the same device or emulator configuration you use in CI
+- Measure against a release build (not debug)
+- Run with the app in a consistent initial state
+
+## Comparing Against a Baseline
+
+Pass the baseline file when running a new measurement:
+
+```bash
+lanterna measure com.example.app --baseline baseline.json
+```
+
+Lanterna will run the measurement normally, then compare every metric score against the baseline and report the differences.
+
+## How It Works
+
+The comparison algorithm evaluates each metric individually:
+
+### Delta Calculation
+
+For each of the six metrics, Lanterna computes:
+
+```
+delta = currentScore - baselineScore
+```
+
+A positive delta means the metric improved. A negative delta means it regressed.
+
+### Status Assignment
+
+Each metric is assigned a status based on the delta magnitude:
+
+| Status | Condition | Meaning |
+|--------|-----------|---------|
+| **Regressed** | delta < -10 | Performance got meaningfully worse |
+| **Improved** | delta > +10 | Performance got meaningfully better |
+| **Unchanged** | -10 ≤ delta ≤ +10 | Within normal variance |
+
+The default regression threshold is **10 score points**. This margin accounts for natural measurement variance between runs and avoids false positives from minor fluctuations.
+
+### Regression Detection
+
+The overall comparison result includes a `hasRegression` flag:
+
+- `hasRegression: true` if **any** metric has a status of "regressed"
+- `hasRegression: false` if all metrics are unchanged or improved
+
+## CI Workflow Pattern
+
+The typical CI workflow saves a baseline on the main branch and compares against it on pull requests:
+
+```bash
+# Step 1: On main branch, save a baseline
+lanterna measure com.example.app --output baseline.json
+# Upload baseline.json as a CI artifact
+
+# Step 2: On PR branch, download baseline and compare
+lanterna measure com.example.app --baseline baseline.json --output current.json
+# Exit code 1 if regression detected
+```
+
+### GitHub Actions Example
+
+```yaml
+# Main branch: save baseline
+- name: Measure baseline
+  if: github.ref == 'refs/heads/main'
+  run: lanterna measure com.example.app --output baseline.json
+
+- name: Upload baseline
+  if: github.ref == 'refs/heads/main'
+  uses: actions/upload-artifact@v4
+  with:
+    name: lanterna-baseline
+    path: baseline.json
+
+# PR: compare against baseline
+- name: Download baseline
+  if: github.event_name == 'pull_request'
+  uses: actions/download-artifact@v4
+  with:
+    name: lanterna-baseline
+  continue-on-error: true
+
+- name: Measure and compare
+  if: github.event_name == 'pull_request'
+  run: lanterna measure com.example.app --baseline baseline.json --output current.json
+```
+
+## Exit Codes
+
+When the `--baseline` flag is provided:
+
+| Exit Code | Meaning |
+|-----------|---------|
+| `0` | No regressions detected |
+| `1` | One or more metrics regressed beyond the threshold |
+
+This makes it straightforward to gate pull request merges on performance — if the exit code is non-zero, the CI step fails and the regression is surfaced to reviewers.
+
+When `--baseline` is **not** provided, the exit code reflects only the absolute score threshold (if `--threshold` is set).

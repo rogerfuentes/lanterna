@@ -1,0 +1,110 @@
+---
+title: "Tier 3 Instrumentation"
+description: "Opt-in deep instrumentation for network, bridge, and layout tracking"
+---
+
+## Overview
+
+Tier 3 features provide deeper visibility into app internals beyond frame rates and navigation timing. They are automatically enabled when `LanternaProvider` is active, requiring no additional configuration. Each tracker operates passively with minimal overhead, collecting data that surfaces in reports and heuristic analysis.
+
+## Network Interception
+
+The network interceptor patches `fetch` and `XMLHttpRequest` globally to capture request metadata without modifying your application code. Each intercepted request records:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier for the request |
+| `url` | `string` | Full request URL |
+| `method` | `string` | HTTP method (GET, POST, etc.) |
+| `startTime` | `number` | Timestamp when the request was initiated |
+| `duration` | `number` | Total time in milliseconds from start to response completion |
+| `status` | `number` | HTTP status code |
+| `responseSize` | `number` | Response body size in bytes |
+| `error` | `string \| null` | Error message if the request failed |
+
+### Accessing network data
+
+```typescript
+const { networkInterceptor } = useLanterna();
+
+const requests = networkInterceptor.getRequests();
+// [{ id, url, method, startTime, duration, status, responseSize, error }]
+```
+
+Network data appears in HTML and JSON reports when present, rendered as a waterfall timeline showing request overlap and duration.
+
+## Bridge/JSI Tracking
+
+The bridge tracker monitors native module call frequency across the React Native bridge. This is particularly useful for identifying chatty native interactions that can degrade performance on the old architecture.
+
+```typescript
+const { bridgeTracker } = useLanterna();
+
+const stats = bridgeTracker.getStats();
+// {
+//   callsPerSecond: number,
+//   totalCalls: number,
+//   topModules: [{ module: string, count: number }]
+// }
+```
+
+The `high-bridge-traffic` heuristic triggers when bridge call frequency exceeds 50 calls per second. The heuristic report identifies the top modules by call volume, helping you pinpoint which native interactions to optimize or batch.
+
+On the New Architecture (Turbo Modules / JSI), bridge overhead is significantly reduced. The tracker still records call frequency for visibility but the heuristic threshold accounts for the lower cost of JSI calls.
+
+## Layout Tracking
+
+The layout tracker detects components that trigger excessive Yoga layout passes. Frequent relayouts are a common source of jank, especially in complex list items or deeply nested view hierarchies.
+
+```typescript
+const { layoutTracker } = useLanterna();
+
+const stats = layoutTracker.getStats();
+// {
+//   totalLayoutEvents: number,
+//   componentsWithExcessiveLayouts: number,
+//   averageLayoutsPerComponent: number
+// }
+```
+
+The `excessive-layouts` heuristic triggers when any component exceeds 3 layout passes during a single render cycle. The report identifies the offending components so you can restructure their layout to reduce recalculation.
+
+### Common causes of excessive layouts
+
+- Dynamic `width` or `height` that depends on sibling measurements
+- `flexWrap` containers with variable-size children
+- Text elements with `adjustsFontSizeToFit` inside flex containers
+- Deeply nested `flex: 1` chains with intermediate padding
+
+## Custom Performance Marks
+
+Annotate your code with custom timing marks to measure specific operations that matter to your app:
+
+```typescript
+const { marks } = useLanterna();
+
+// Place marks at key points in your code
+marks.mark('data_loaded');
+marks.mark('list_rendered');
+
+// Measure the duration between two marks
+marks.measure('load_to_render', 'data_loaded', 'list_rendered');
+```
+
+Custom marks and measures appear in the report timeline alongside automatic metrics. They are also included in Perfetto trace exports, making them visible in the [ui.perfetto.dev](https://ui.perfetto.dev) timeline view.
+
+### Practical examples
+
+```typescript
+// Measure API response processing
+marks.mark('api_response_received');
+const processed = transformData(response);
+marks.mark('api_response_processed');
+marks.measure('data_transform', 'api_response_received', 'api_response_processed');
+
+// Measure list render completion
+marks.mark('flatlist_render_start');
+// ... after onEndReached or similar callback
+marks.mark('flatlist_render_complete');
+marks.measure('list_render', 'flatlist_render_start', 'flatlist_render_complete');
+```

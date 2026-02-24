@@ -4,6 +4,8 @@
 
 A CLI-first, cross-platform performance profiler for React Native and Expo apps. One command to capture, analyze, and report performance metrics — no Xcode or Android Studio required.
 
+**[Documentation](https://rogerfuentes.github.io/lanterna/)** | **[Getting Started](https://rogerfuentes.github.io/lanterna/getting-started/installation/)**
+
 ```bash
 lanterna measure com.example.app
 ```
