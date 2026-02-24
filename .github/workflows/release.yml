@@ -21,9 +21,32 @@ jobs:
       - run: bun install
       - run: bun run build
       - run: bun test
+      - name: Check for pending changesets
+        id: changesets
+        run: |
+          if ls .changeset/*.md 1>/dev/null 2>&1 && [ "$(ls .changeset/*.md | grep -v README.md)" ]; then
+            echo "pending=true" >> $GITHUB_OUTPUT
+          else
+            echo "pending=false" >> $GITHUB_OUTPUT
+            echo "No pending changesets, skipping release"
+          fi
       - name: Version packages
+        if: steps.changesets.outputs.pending == 'true'
         run: bunx changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push version bumps
+        if: steps.changesets.outputs.pending == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: release packages" || echo "No changes to commit"
+          git push
       - name: Publish to npm
-        run: NODE_AUTH_TOKEN="" npm publish --workspaces --access public --provenance
+        if: steps.changesets.outputs.pending == 'true'
+        run: |
+          npm config set provenance true
+          bunx changeset publish
+        env:
+          NODE_AUTH_TOKEN: ""
