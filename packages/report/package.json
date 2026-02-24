@@ -1,10 +1,13 @@
 {
   "name": "@lanternajs/report",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "license": "Apache-2.0",
   "description": "Terminal and HTML report output for Lanterna",
   "repository": {
@@ -12,7 +15,9 @@
     "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/report"
   },
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@lanternajs/core": "workspace:*"
   },

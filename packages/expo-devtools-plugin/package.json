@@ -1,10 +1,14 @@
 {
   "name": "@lanternajs/expo-devtools-plugin",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist", "src", "webui-dist"],
+  "files": [
+    "dist",
+    "src",
+    "webui-dist"
+  ],
   "license": "Apache-2.0",
   "description": "Expo DevTools plugin for Lanterna performance monitoring",
   "repository": {
@@ -12,7 +16,9 @@
     "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/expo-devtools-plugin"
   },
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@lanternajs/core": "workspace:*"
   },
@@ -20,7 +26,9 @@
     "expo": ">=50.0.0"
   },
   "peerDependenciesMeta": {
-    "expo": { "optional": true }
+    "expo": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "esbuild": "^0.24.0"

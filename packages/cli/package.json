@@ -1,13 +1,15 @@
 {
   "name": "@lanternajs/cli",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "lanterna": "dist/index.js"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "license": "Apache-2.0",
   "description": "CLI entry point for Lanterna — Lighthouse for mobile apps",
   "repository": {
@@ -15,7 +17,9 @@
     "url": "https://github.com/rogerfuentes/lanterna.git",
     "directory": "packages/cli"
   },
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@lanternajs/core": "workspace:*",
     "@lanternajs/android": "workspace:*",
