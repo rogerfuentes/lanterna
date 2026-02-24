@@ -35,14 +35,6 @@ jobs:
         run: bunx changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Commit and push version bumps
-        if: steps.changesets.outputs.pending == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: release packages" || echo "No changes to commit"
-          git push
       - name: Publish to npm
         if: steps.changesets.outputs.pending == 'true'
         run: |
@@ -50,3 +42,12 @@ jobs:
           bunx changeset publish
         env:
           NODE_AUTH_TOKEN: ""
+      - name: Commit and push version bumps
+        if: steps.changesets.outputs.pending == 'true'
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: release packages" || echo "No changes to commit"
+          git push
