@@ -1,6 +1,6 @@
 {
   "name": "@lanternajs/ios",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,7 +19,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@lanternajs/core": "workspace:*"
+    "@lanternajs/core": "^0.0.3"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",

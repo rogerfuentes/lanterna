@@ -1,5 +1,16 @@
 # @lanternajs/cli
 
+## 0.0.3
+
+### Patch Changes
+
+- 6d3cc6a: fix: resolve workspace:\* dependencies to real versions before npm publish
+- Updated dependencies [6d3cc6a]
+  - @lanternajs/core@0.0.3
+  - @lanternajs/android@0.0.3
+  - @lanternajs/ios@0.0.3
+  - @lanternajs/report@0.0.3
+
 ## 0.0.2
 
 ### Patch Changes
