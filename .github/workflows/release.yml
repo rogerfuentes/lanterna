@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
   id-token: write
 
 jobs:
@@ -35,19 +36,27 @@ jobs:
         run: bunx changeset version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve workspace dependencies
+        if: steps.changesets.outputs.pending == 'true'
+        run: bun run scripts/resolve-workspace-deps.ts
       - name: Publish to npm
         if: steps.changesets.outputs.pending == 'true'
-        run: |
-          npm config set provenance true
-          bunx changeset publish
+        run: npm publish --workspaces --access public --provenance
         env:
           NODE_AUTH_TOKEN: ""
-      - name: Commit and push version bumps
+      - name: Create version bump PR
         if: steps.changesets.outputs.pending == 'true'
-        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b chore/release-version-bumps
           git add -A
-          git commit -m "chore: release packages" || echo "No changes to commit"
-          git push
+          git commit -m "chore: release packages" || exit 0
+          git push -u origin chore/release-version-bumps --force
+          gh pr create \
+            --title "chore: release packages" \
+            --body "Automated version bump from changesets after npm publish." \
+            --base main \
+            --head chore/release-version-bumps || echo "PR already exists"
