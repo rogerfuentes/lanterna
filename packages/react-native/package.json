@@ -1,6 +1,6 @@
 {
   "name": "@lanternajs/react-native",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -30,7 +30,7 @@
     }
   },
   "dependencies": {
-    "@lanternajs/core": "workspace:*"
+    "@lanternajs/core": "^0.0.3"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

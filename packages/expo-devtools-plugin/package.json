@@ -1,6 +1,6 @@
 {
   "name": "@lanternajs/expo-devtools-plugin",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,7 +20,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@lanternajs/core": "workspace:*"
+    "@lanternajs/core": "^0.0.3"
   },
   "peerDependencies": {
     "expo": ">=50.0.0"

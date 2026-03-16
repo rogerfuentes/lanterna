@@ -1,6 +1,6 @@
 {
   "name": "@lanternajs/cli",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,10 +21,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@lanternajs/core": "workspace:*",
-    "@lanternajs/android": "workspace:*",
-    "@lanternajs/ios": "workspace:*",
-    "@lanternajs/report": "workspace:*"
+    "@lanternajs/core": "^0.0.3",
+    "@lanternajs/android": "^0.0.3",
+    "@lanternajs/ios": "^0.0.3",
+    "@lanternajs/report": "^0.0.3"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
