@@ -109,6 +109,8 @@ export class LanternaWsClient {
 				}
 				if (this.shouldReconnect()) {
 					this.scheduleReconnect();
+				} else if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
+					this.warnConnectionFailed();
 				}
 			};
 
@@ -332,6 +334,17 @@ export class LanternaWsClient {
 		if (this.state === newState) return;
 		this.state = newState;
 		this.emit({ type: "stateChange", state: newState });
+	}
+
+	private warnConnectionFailed(): void {
+		const url = `ws://${this.config.host}:${this.config.port}`;
+		console.warn(
+			`[Lanterna] WebSocket connection to ${url} failed after ${this.config.maxReconnectAttempts} attempts. ` +
+				"Metrics will not be streamed to the CLI.\n" +
+				"• Make sure `lanterna monitor` is running\n" +
+				"• On iOS, add NSAllowsLocalNetworking to Info.plist (see docs)\n" +
+				"• On physical devices, set the wsHost prop to your machine's IP",
+		);
 	}
 
 	private emit(event: ClientEvent): void {
