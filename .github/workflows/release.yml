@@ -36,7 +36,7 @@ jobs:
         uses: changesets/action@v1
         with:
           version: bun run version
-          publish: npm publish --workspaces --access public --provenance
+          publish: bun run scripts/resolve-workspace-deps.ts && bunx changeset publish
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
