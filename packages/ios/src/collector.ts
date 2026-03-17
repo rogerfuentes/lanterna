@@ -106,11 +106,7 @@ export async function collectIosMetrics(
 	}
 }
 
-async function collectSimulatorMemory(
-	runner: CommandRunner,
-	pid: number,
-	timestamp: number,
-) {
+async function collectSimulatorMemory(runner: CommandRunner, pid: number, timestamp: number) {
 	const topResult = await runner("top", ["-l", "1", "-pid", String(pid), "-stats", "pid,rsize"]);
 	return parseTopMemory(topResult.stdout, timestamp);
 }

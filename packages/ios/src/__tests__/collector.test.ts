@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { CommandRunner, Device } from "@lanternajs/core";
-import { parseDevicectlProcesses } from "../process";
-import { findIosPid } from "../process";
+import { findIosPid, parseDevicectlProcesses } from "../process";
 import { getXcodeVersion } from "../xcode-version";
 
 function createMockRunner(
