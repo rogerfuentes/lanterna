@@ -10,4 +10,4 @@ export interface Spec extends TurboModule {
 	getActiveSessionId(): Promise<string | null>;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>("LanternaModule");
+export default TurboModuleRegistry.get<Spec>("LanternaModule");

@@ -30,7 +30,34 @@ npm install @lanternajs/react-native
 bun add @lanternajs/react-native
 ```
 
-For Expo projects, no additional native linking is required. For bare React Native projects, run `cd ios && pod install` after installation.
+### Expo Projects
+
+Add the config plugin to your `app.json`:
+
+```json
+{
+  "expo": {
+    "plugins": ["@lanternajs/react-native"]
+  }
+}
+```
+
+Then rebuild your native projects:
+
+```bash
+npx expo prebuild --clean
+npx expo run:ios
+```
+
+### Bare React Native Projects
+
+After installation, link the native module:
+
+```bash
+cd ios && pod install
+```
+
+The podspec is discovered automatically by React Native autolinking.
 
 ## Quick Setup
 

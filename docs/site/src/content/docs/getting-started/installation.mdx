@@ -64,4 +64,16 @@ For deeper performance insights beyond what platform CLIs can provide (Tier 2 an
 bun add @lanternajs/react-native
 ```
 
+For **Expo projects**, add the config plugin to your `app.json`:
+
+```json
+{
+  "expo": {
+    "plugins": ["@lanternajs/react-native"]
+  }
+}
+```
+
+For **bare React Native projects**, run `cd ios && pod install` after installation.
+
 See the [In-App Module overview](/lanterna/in-app/overview/) for setup instructions and available features.

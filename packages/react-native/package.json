@@ -9,7 +9,9 @@
     "src",
     "ios",
     "android",
-    "plugin"
+    "plugin",
+    "lanterna-react-native.podspec",
+    "expo-module.config.json"
   ],
   "license": "Apache-2.0",
   "description": "React Native in-app performance module for Lanterna",
