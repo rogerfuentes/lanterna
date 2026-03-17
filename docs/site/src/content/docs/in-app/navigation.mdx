@@ -5,7 +5,7 @@ description: "Per-screen performance metrics with React Navigation and Expo Rout
 
 ## Automatic Detection
 
-When using Expo Router, `LanternaProvider` automatically detects navigation state changes without any additional setup. The provider listens for route changes through the Expo Router internals and records per-screen metrics transparently.
+When using Expo Router, `LanternaProvider` automatically detects navigation state changes without any additional setup. The provider dynamically imports `expo-router` and subscribes to its navigation state, recording per-screen metrics transparently.
 
 ```tsx
 import { LanternaProvider } from '@lanternajs/react-native';
@@ -15,6 +15,23 @@ export default function App() {
   return (
     <LanternaProvider>
       <Stack />
+    </LanternaProvider>
+  );
+}
+```
+
+If auto-detection doesn't work in your setup, you can pass the navigation ref explicitly:
+
+```tsx
+import { useNavigationContainerRef } from 'expo-router';
+import { LanternaProvider } from '@lanternajs/react-native';
+
+export default function RootLayout() {
+  const navigationRef = useNavigationContainerRef();
+
+  return (
+    <LanternaProvider navigationRef={navigationRef}>
+      <Slot />
     </LanternaProvider>
   );
 }
