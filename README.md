@@ -58,7 +58,7 @@ lanterna measure com.example.app --baseline previous.json
 
 ### Prerequisites
 
-- **iOS**: macOS with Xcode Command Line Tools (`xcode-select --install`)
+- **iOS**: macOS with Xcode Command Line Tools (`xcode-select --install`). Physical devices require Xcode 15+
 - **Android**: Android SDK with ADB in your PATH
 - **Runtime**: [Bun](https://bun.sh) v1.0+
 

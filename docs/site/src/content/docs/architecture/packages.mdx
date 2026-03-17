@@ -59,13 +59,15 @@ Android data collection via ADB. Includes:
 
 ### @lanternajs/ios
 
-iOS data collection via xctrace. Includes:
+iOS data collection via xctrace and devicectl. Includes:
 
 - Time Profiler recording via `xcrun xctrace record`
 - XML parsing of `xcrun xctrace export` output
 - Xcode version awareness for handling format differences across releases
 - Simulator enumeration via `xcrun simctl list`
-- Device enumeration via `xcrun xctrace list devices`
+- Physical device enumeration via `xcrun xctrace list devices`
+- Physical device process discovery and memory collection via `xcrun devicectl` (Xcode 15+)
+- Conditional collection logic based on device type (simulator vs physical)
 
 The xctrace XML format is underdocumented and varies between Xcode versions. The parser includes version-specific handling to maintain compatibility.
 

@@ -1,4 +1,5 @@
 import type { CommandRunner, Device, MeasurementSession } from "@lanternajs/core";
+import { parseDevicectlMemory } from "./parsers/devicectl-memory";
 import { parseTopMemory } from "./parsers/memory";
 import { parseXctraceXml } from "./parsers/xctrace-xml";
 import { findIosPid } from "./process";
@@ -7,11 +8,11 @@ import { findIosPid } from "./process";
  * Collect iOS performance metrics for a running app.
  *
  * Pipeline:
- * 1. Find the app PID via pgrep
+ * 1. Find the app PID (simctl for simulators, devicectl for physical devices)
  * 2. Record a Time Profiler trace with `xcrun xctrace`
  * 3. Export the trace to XML
  * 4. Parse CPU metrics from the XML
- * 5. Collect memory metrics via `top`
+ * 5. Collect memory metrics (top for simulators, devicectl for physical devices)
  * 6. Clean up temp files
  * 7. Return assembled MeasurementSession
  */
@@ -22,9 +23,10 @@ export async function collectIosMetrics(
 	duration: number,
 ): Promise<MeasurementSession> {
 	const startedAt = Date.now();
+	const isPhysical = device.type === "physical";
 
 	// 1. Find PID
-	const pid = await findIosPid(runner, device.id, bundleId);
+	const pid = await findIosPid(runner, device.id, bundleId, device.type);
 	if (pid === null) {
 		throw new Error(
 			`Could not find running process for "${bundleId}" on device "${device.name}" (${device.id}). ` +
@@ -85,9 +87,10 @@ export async function collectIosMetrics(
 		const xml = await Bun.file(xmlPath).text();
 		const cpuSamples = parseXctraceXml(xml, duration);
 
-		// 6. Get memory via top
-		const topResult = await runner("top", ["-l", "1", "-pid", String(pid), "-stats", "pid,rsize"]);
-		const memorySamples = parseTopMemory(topResult.stdout, Date.now());
+		// 6. Get memory — use devicectl for physical devices, top for simulators
+		const memorySamples = isPhysical
+			? await collectPhysicalDeviceMemory(runner, device.id, pid, Date.now())
+			: await collectSimulatorMemory(runner, pid, Date.now());
 
 		// 7. Assemble session
 		return {
@@ -101,4 +104,37 @@ export async function collectIosMetrics(
 		// 8. Cleanup
 		await runner("rm", ["-rf", tempDir]);
 	}
+}
+
+async function collectSimulatorMemory(
+	runner: CommandRunner,
+	pid: number,
+	timestamp: number,
+) {
+	const topResult = await runner("top", ["-l", "1", "-pid", String(pid), "-stats", "pid,rsize"]);
+	return parseTopMemory(topResult.stdout, timestamp);
+}
+
+async function collectPhysicalDeviceMemory(
+	runner: CommandRunner,
+	deviceId: string,
+	pid: number,
+	timestamp: number,
+) {
+	const result = await runner("xcrun", [
+		"devicectl",
+		"device",
+		"info",
+		"processes",
+		"--device",
+		deviceId,
+		"--json-output",
+		"-",
+	]);
+
+	if (result.exitCode !== 0 || !result.stdout) {
+		return [];
+	}
+
+	return parseDevicectlMemory(result.stdout, pid, timestamp);
 }

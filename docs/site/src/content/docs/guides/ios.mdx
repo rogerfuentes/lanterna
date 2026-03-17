@@ -29,8 +29,8 @@ Lanterna uses a 7-step pipeline to collect and process iOS performance data:
 
 Lanterna locates the target app's process ID using platform-appropriate discovery:
 
-- **Simulator:** `xcrun simctl spawn <deviceId> launchctl list` to enumerate running processes
-- **Physical device:** `pgrep -f <bundleId>` to find the process by bundle identifier
+- **Simulator:** `xcrun simctl spawn <deviceId> launchctl list` to enumerate running processes, with `pgrep` as fallback
+- **Physical device:** `xcrun devicectl device info processes --device <deviceId>` to query the on-device process list (requires Xcode 15+)
 
 ### Step 2 — Create Temp Directory
 
@@ -64,11 +64,16 @@ The exported XML contains weight values in nanoseconds representing CPU time spe
 
 ### Step 6 — Collect Memory
 
-```bash
-top -l 1 -pid <pid> -stats pid,rsize
-```
+Memory collection varies by device type:
 
-A single snapshot of the process's resident set size (rsize) is captured to measure memory consumption in megabytes.
+- **Simulator:** Uses the macOS `top` command to read the process's resident set size (rsize):
+  ```bash
+  top -l 1 -pid <pid> -stats pid,rsize
+  ```
+- **Physical device:** Queries on-device memory via `xcrun devicectl`, which reports memory usage in bytes (converted to MB):
+  ```bash
+  xcrun devicectl device info processes --device <deviceId> --json-output -
+  ```
 
 ### Step 7 — Cleanup
 
@@ -81,6 +86,7 @@ There are several important limitations to be aware of when profiling iOS apps:
 - **No real-time streaming.** The xctrace tool follows a record-then-export model. Data is only available after the recording completes. For live monitoring, use the Tier 2 in-app module with `lanterna monitor`.
 - **macOS only.** iOS profiling cannot be performed from Linux or Windows. This affects CI environments — you must use macOS runners for iOS performance checks.
 - **Recording overhead.** The Time Profiler template adds a small amount of overhead to the profiled process. Results are representative but not perfectly identical to uninstrumented performance.
+- **Physical device requires Xcode 15+.** Process discovery and memory collection on physical devices use `xcrun devicectl`, which is only available in Xcode 15 and later.
 
 ## Xcode Version Compatibility
 
@@ -98,10 +104,11 @@ Both iOS Simulator and physical devices are supported.
 
 | Aspect | Simulator | Physical Device |
 |--------|-----------|-----------------|
-| Process discovery | `xcrun simctl spawn` | `pgrep -f` |
+| Process discovery | `xcrun simctl spawn` + `pgrep` fallback | `xcrun devicectl device info processes` |
+| Memory collection | `top -l 1 -pid <pid>` (host process) | `xcrun devicectl` (on-device memory) |
 | Performance fidelity | Runs on Mac hardware (not representative) | Real device performance |
 | CI compatibility | Works on macOS runners | Requires connected device |
-| Setup | No additional setup | Developer Mode required |
+| Setup | No additional setup | Developer Mode + Xcode 15+ required |
 
 For accurate performance measurements, always validate on physical devices. The simulator runs on desktop-class hardware and does not reflect real-world mobile performance.
 
@@ -134,6 +141,17 @@ Profiling a physical device may require:
 - Verify the app is running on the target device
 - Check that the bundle identifier is correct
 - On Simulator, ensure you are targeting the correct simulator instance (use `xcrun simctl list devices booted` to see running simulators)
+- On physical devices, ensure the device is unlocked and trusted (run `xcrun devicectl device info processes --device <id>` manually to verify connectivity)
+
+### "devicectl: command not found"
+
+Physical device profiling requires Xcode 15 or later. Check your Xcode version:
+
+```bash
+xcodebuild -version
+```
+
+If you have an older Xcode, update via the Mac App Store or [developer.apple.com](https://developer.apple.com/xcode/).
 
 ### Trace Recording Fails
 
