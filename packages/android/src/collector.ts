@@ -4,6 +4,24 @@ import { parseMeminfoOutput } from "./parsers/meminfo";
 import { parseTopOutput } from "./parsers/top";
 import { findAndroidPid } from "./process";
 
+const PID_POLL_INTERVAL_MS = 500;
+const PID_MAX_ATTEMPTS = 10;
+
+/**
+ * Poll for a PID with retries. Gives the app up to 5 seconds to appear
+ * in the process list after launch.
+ */
+async function waitForPid(findPid: () => Promise<number | null>): Promise<number | null> {
+	for (let attempt = 0; attempt < PID_MAX_ATTEMPTS; attempt++) {
+		const pid = await findPid();
+		if (pid !== null) return pid;
+		if (attempt < PID_MAX_ATTEMPTS - 1) {
+			await new Promise((resolve) => setTimeout(resolve, PID_POLL_INTERVAL_MS));
+		}
+	}
+	return null;
+}
+
 /**
  * Collect Android performance metrics for a given device and package.
  *
@@ -17,7 +35,7 @@ export async function collectAndroidMetrics(
 	packageName: string,
 	duration: number,
 ): Promise<MeasurementSession> {
-	const pid = await findAndroidPid(runner, device.id, packageName);
+	const pid = await waitForPid(() => findAndroidPid(runner, device.id, packageName));
 	if (pid === null) {
 		throw new Error(
 			`Process not found: "${packageName}" is not running on device "${device.name}" (${device.id}). ` +

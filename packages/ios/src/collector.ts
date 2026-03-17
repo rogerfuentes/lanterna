@@ -4,6 +4,24 @@ import { parseTopMemory } from "./parsers/memory";
 import { parseXctraceXml } from "./parsers/xctrace-xml";
 import { findIosPid } from "./process";
 
+const PID_POLL_INTERVAL_MS = 500;
+const PID_MAX_ATTEMPTS = 10;
+
+/**
+ * Poll for a PID with retries. Gives the app up to 5 seconds to appear
+ * in the process list after launch.
+ */
+async function waitForPid(findPid: () => Promise<number | null>): Promise<number | null> {
+	for (let attempt = 0; attempt < PID_MAX_ATTEMPTS; attempt++) {
+		const pid = await findPid();
+		if (pid !== null) return pid;
+		if (attempt < PID_MAX_ATTEMPTS - 1) {
+			await new Promise((resolve) => setTimeout(resolve, PID_POLL_INTERVAL_MS));
+		}
+	}
+	return null;
+}
+
 /**
  * Collect iOS performance metrics for a running app.
  *
@@ -25,8 +43,8 @@ export async function collectIosMetrics(
 	const startedAt = Date.now();
 	const isPhysical = device.type === "physical";
 
-	// 1. Find PID
-	const pid = await findIosPid(runner, device.id, bundleId, device.type);
+	// 1. Find PID (retries up to 5s for apps that are still launching)
+	const pid = await waitForPid(() => findIosPid(runner, device.id, bundleId, device.type));
 	if (pid === null) {
 		throw new Error(
 			`Could not find running process for "${bundleId}" on device "${device.name}" (${device.id}). ` +
