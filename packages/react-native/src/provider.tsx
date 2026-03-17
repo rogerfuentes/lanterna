@@ -39,6 +39,10 @@ export interface LanternaProviderProps {
 	intervalMs?: number;
 	/** Navigation ref override. If not provided, auto-detects Expo Router. */
 	navigationRef?: { current: any } | null;
+	/** WebSocket host for the lanterna monitor server (default: "localhost"). Set to your machine's IP for physical device monitoring. */
+	wsHost?: string;
+	/** WebSocket port for the lanterna monitor server (default: 8347). */
+	wsPort?: number;
 }
 
 /** All Lanterna module instances accessible via useLanterna(). */
@@ -73,6 +77,8 @@ export function LanternaProvider({
 	enabled = true,
 	intervalMs = 500,
 	navigationRef,
+	wsHost,
+	wsPort,
 }: LanternaProviderProps) {
 	const instances = useRef<LanternaInstances | null>(null);
 	if (instances.current === null) {
@@ -109,9 +115,12 @@ export function LanternaProvider({
 			native.startProfiling(JSON.stringify({ intervalMs })).catch(() => {});
 		}
 
-		// Connect WebSocket client to CLI (ws://localhost:8347)
+		// Connect WebSocket client to CLI
 		const platform = Platform.OS === "android" ? "android" : "ios";
-		const wsClient = new LanternaWsClient("lanterna-app", platform, Platform.OS);
+		const wsClient = new LanternaWsClient("lanterna-app", platform, Platform.OS, {
+			...(wsHost !== undefined && { host: wsHost }),
+			...(wsPort !== undefined && { port: wsPort }),
+		});
 		wsClient.connect();
 
 		// Single collection loop: poll native → feed trackers → collect → send

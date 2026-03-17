@@ -28,6 +28,8 @@ The provider initializes all trackers, starts the native profiling module, and c
 | `enabled` | `boolean` | `true` | Enable or disable profiling. Set to `__DEV__` to restrict profiling to development builds only. |
 | `intervalMs` | `number` | `500` | Metric collection interval in milliseconds. Lower values provide more granular data but increase overhead. |
 | `navigationRef` | `{ current: any }` | auto-detect | Navigation container ref override. Auto-detects Expo Router if not provided. Required for React Navigation. |
+| `wsHost` | `string` | `"localhost"` | WebSocket host for the `lanterna monitor` server. Set to your machine's local IP for physical device monitoring. |
+| `wsPort` | `number` | `8347` | WebSocket port for the `lanterna monitor` server. |
 
 ### Example with all props
 
@@ -50,6 +52,24 @@ export default function App() {
     </LanternaProvider>
   );
 }
+```
+
+### Physical device monitoring
+
+On a physical device, `localhost` resolves to the device itself. Set `wsHost` to your development machine's local IP:
+
+```tsx
+<LanternaProvider wsHost="192.168.1.42">
+  <App />
+</LanternaProvider>
+```
+
+Or use an environment variable so the value works across environments:
+
+```tsx
+<LanternaProvider wsHost={process.env.EXPO_PUBLIC_LANTERNA_HOST ?? "localhost"}>
+  <App />
+</LanternaProvider>
 ```
 
 ## useLanterna() Hook
@@ -83,7 +103,7 @@ When `LanternaProvider` mounts, the following sequence executes:
 
 1. **Starts all passive trackers** — Network interceptor patches `fetch` and `XMLHttpRequest`. Bridge tracker hooks into the native module system. Layout tracker registers for Yoga events.
 2. **Starts native profiling via Turbo Module** — Activates `CADisplayLink` (iOS) or `Choreographer.FrameCallback` (Android) for frame timing data.
-3. **Connects WebSocket client** — Establishes a connection to `ws://localhost:8347` where the CLI listens for incoming metric streams.
+3. **Connects WebSocket client** — Establishes a connection to `ws://<wsHost>:<wsPort>` (default `ws://localhost:8347`) where the CLI listens for incoming metric streams.
 4. **Runs a collection loop** every `intervalMs`:
    - Polls the native module for frame timestamps and memory usage
    - Feeds tracker data (network, bridge, layout) to the collector
