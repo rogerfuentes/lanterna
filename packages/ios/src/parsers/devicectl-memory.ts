@@ -8,11 +8,7 @@ import { type MetricSample, MetricType } from "@lanternajs/core";
  *
  * Never throws — returns an empty array on malformed or missing data.
  */
-export function parseDevicectlMemory(
-	json: string,
-	pid: number,
-	timestamp: number,
-): MetricSample[] {
+export function parseDevicectlMemory(json: string, pid: number, timestamp: number): MetricSample[] {
 	if (!json) return [];
 
 	try {

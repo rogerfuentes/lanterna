@@ -257,9 +257,7 @@ describe("parseDevicectlMemory", () => {
 	test("returns empty array when memoryUse is zero", () => {
 		const json = JSON.stringify({
 			result: {
-				runningProcesses: [
-					{ processIdentifier: 12345, executable: "MyApp", memoryUse: 0 },
-				],
+				runningProcesses: [{ processIdentifier: 12345, executable: "MyApp", memoryUse: 0 }],
 			},
 		});
 		expect(parseDevicectlMemory(json, 12345, timestamp)).toEqual([]);
@@ -268,9 +266,7 @@ describe("parseDevicectlMemory", () => {
 	test("handles fractional MB values", () => {
 		const json = JSON.stringify({
 			result: {
-				runningProcesses: [
-					{ processIdentifier: 12345, executable: "MyApp", memoryUse: 157286400 },
-				],
+				runningProcesses: [{ processIdentifier: 12345, executable: "MyApp", memoryUse: 157286400 }],
 			},
 		});
 
