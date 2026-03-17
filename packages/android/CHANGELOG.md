@@ -1,5 +1,11 @@
 # @lanternajs/android
 
+## 0.0.4
+
+### Patch Changes
+
+- ae4f809: Add PID retry polling (up to 5s) so measure command waits for apps that are still launching instead of failing immediately
+
 ## 0.0.3
 
 ### Patch Changes

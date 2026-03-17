@@ -1,5 +1,14 @@
 # @lanternajs/react-native
 
+## 0.0.4
+
+### Patch Changes
+
+- 6488df2: Add console.warn when WebSocket connection fails after max reconnect attempts with ATS troubleshooting hint
+- c39c29c: Implement Expo Router auto-detection for navigation tracking when no navigationRef is provided
+- fe56ebc: Fix iOS native module autolinking: add expo-module.config.json, include podspec in published files, and use TurboModuleRegistry.get instead of getEnforcing for graceful degradation
+- b57d0de: Add wsHost and wsPort props to LanternaProvider for physical device monitoring
+
 ## 0.0.3
 
 ### Patch Changes
