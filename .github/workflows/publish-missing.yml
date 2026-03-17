@@ -1,0 +1,40 @@
+name: Publish Missing Packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: bun install
+      - run: bun run build
+
+      - name: Publish unpublished packages
+        run: |
+          for pkg in packages/ios packages/react-native packages/report packages/expo-devtools-plugin; do
+            cd "$GITHUB_WORKSPACE/$pkg"
+            NAME=$(node -p "require('./package.json').name")
+            VERSION=$(node -p "require('./package.json').version")
+            PUBLISHED=$(npm view "$NAME@$VERSION" version 2>/dev/null || echo "")
+            if [ -z "$PUBLISHED" ]; then
+              echo "Publishing $NAME@$VERSION..."
+              npm publish --access public --provenance
+            else
+              echo "$NAME@$VERSION already published, skipping."
+            fi
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
