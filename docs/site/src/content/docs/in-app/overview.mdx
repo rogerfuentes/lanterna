@@ -77,6 +77,38 @@ export default function App() {
 
 That is all you need. The provider starts all passive trackers, connects to the CLI via WebSocket, and begins streaming metrics automatically.
 
+### iOS: App Transport Security
+
+`LanternaProvider` connects via `ws://` (plain WebSocket). iOS App Transport Security blocks non-TLS connections by default, which silently prevents the WebSocket from connecting. Add `NSAllowsLocalNetworking` to allow local connections.
+
+**Expo projects** — add to `app.json`:
+
+```json
+{
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    }
+  }
+}
+```
+
+**Bare React Native projects** — add to `ios/<AppName>/Info.plist`:
+
+```xml
+<key>NSAppTransportSecurity</key>
+<dict>
+  <key>NSAllowsLocalNetworking</key>
+  <true/>
+</dict>
+```
+
+This setting permits `ws://` and `http://` connections to loopback and local network addresses only. It does not weaken ATS for remote hosts and is safe to include in production builds.
+
 ## Capabilities
 
 | Feature | Tier | Description |
