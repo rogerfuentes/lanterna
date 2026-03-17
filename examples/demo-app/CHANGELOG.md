@@ -1,5 +1,15 @@
 # lanterna-demo
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [6488df2]
+- Updated dependencies [c39c29c]
+- Updated dependencies [fe56ebc]
+- Updated dependencies [b57d0de]
+  - @lanternajs/react-native@0.0.4
+
 ## 1.0.2
 
 ### Patch Changes

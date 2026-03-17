@@ -1,6 +1,6 @@
 {
   "name": "@lanternajs/cli",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@lanternajs/core": "^0.0.3",
-    "@lanternajs/android": "^0.0.3",
-    "@lanternajs/ios": "^0.0.3",
+    "@lanternajs/android": "^0.0.4",
+    "@lanternajs/ios": "^0.0.4",
     "@lanternajs/report": "^0.0.3"
   },
   "scripts": {
