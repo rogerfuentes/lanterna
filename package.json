@@ -10,7 +10,7 @@
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "changeset": "changeset",
-    "version": "changeset version",
+    "version": "changeset version && bun run scripts/resolve-workspace-deps.ts",
     "release": "changeset publish"
   },
   "devDependencies": {
