@@ -23,6 +23,14 @@
   "publishConfig": {
     "access": "public"
   },
+  "react-native": {
+    "ios": {
+      "podspecPath": "./lanterna-react-native.podspec"
+    },
+    "android": {
+      "sourceDir": "./android"
+    }
+  },
   "codegenConfig": {
     "name": "lanternamodule",
     "type": "modules",
