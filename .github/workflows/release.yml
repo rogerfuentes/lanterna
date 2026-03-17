@@ -1,7 +1,10 @@
 name: Release
+
 on:
   push:
     branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 permissions:
   contents: write
@@ -14,49 +17,28 @@ jobs:
     environment: npm
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: oven-sh/setup-bun@v2
+
       - uses: actions/setup-node@v4
         with:
           node-version: "24.x"
           registry-url: "https://registry.npmjs.org"
+
       - run: bun install
       - run: bun run build
       - run: bun test
-      - name: Check for pending changesets
+
+      - name: Create Release Pull Request or Publish to npm
         id: changesets
-        run: |
-          if ls .changeset/*.md 1>/dev/null 2>&1 && [ "$(ls .changeset/*.md | grep -v README.md)" ]; then
-            echo "pending=true" >> $GITHUB_OUTPUT
-          else
-            echo "pending=false" >> $GITHUB_OUTPUT
-            echo "No pending changesets, skipping release"
-          fi
-      - name: Version packages
-        if: steps.changesets.outputs.pending == 'true'
-        run: bunx changeset version
+        uses: changesets/action@v1
+        with:
+          version: bun run version
+          publish: npm publish --workspaces --access public --provenance
+          commit: "chore: version packages"
+          title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Resolve workspace dependencies
-        if: steps.changesets.outputs.pending == 'true'
-        run: bun run scripts/resolve-workspace-deps.ts
-      - name: Publish to npm
-        if: steps.changesets.outputs.pending == 'true'
-        run: npm publish --workspaces --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ""
-      - name: Create version bump PR
-        if: steps.changesets.outputs.pending == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b chore/release-version-bumps
-          git add -A
-          git commit -m "chore: release packages" || exit 0
-          git push -u origin chore/release-version-bumps --force
-          gh pr create \
-            --title "chore: release packages" \
-            --body "Automated version bump from changesets after npm publish." \
-            --base main \
-            --head chore/release-version-bumps || echo "PR already exists"
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
