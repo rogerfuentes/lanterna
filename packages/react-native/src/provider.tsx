@@ -176,6 +176,9 @@ export function LanternaProvider({
 
 /**
  * Wire navigation state changes to the NavigationTracker.
+ *
+ * If an explicit navigationRef is provided (React Navigation), use it directly.
+ * Otherwise, attempt to auto-detect Expo Router via dynamic import.
  */
 function useAutoNavigation(
 	tracker: NavigationTracker,
@@ -191,6 +194,7 @@ function useAutoNavigation(
 		}),
 	);
 
+	// Explicit ref path (React Navigation or manually-provided Expo Router ref)
 	useEffect(() => {
 		if (!externalRef) return;
 
@@ -205,6 +209,32 @@ function useAutoNavigation(
 			return typeof unsub === "function" ? unsub : () => unsub?.remove();
 		}
 	}, [externalRef]);
+
+	// Auto-detect Expo Router when no explicit ref is provided
+	useEffect(() => {
+		if (externalRef) return;
+
+		const handler = integrationRef.current.handler;
+		let unsubscribe: (() => void) | undefined;
+
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const expoRouter = require("expo-router");
+			const rootNav = expoRouter.router ?? expoRouter.rootNavigation;
+
+			if (rootNav && typeof rootNav.addListener === "function") {
+				const unsub = rootNav.addListener("state", () => {
+					const state = rootNav.getRootState?.();
+					if (state) handler(state as NavigationState);
+				});
+				unsubscribe = typeof unsub === "function" ? unsub : () => unsub?.remove();
+			}
+		} catch {
+			// expo-router not installed — navigation tracking silently disabled
+		}
+
+		return () => unsubscribe?.();
+	}, []);
 }
 
 /**
