@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { MetricType } from "@lanternajs/core";
+import { parseDevicectlMemory } from "../parsers/devicectl-memory";
 import { parseTopMemory } from "../parsers/memory";
 import { parseXctraceXml } from "../parsers/xctrace-xml";
 
@@ -199,5 +200,82 @@ describe("parseTopMemory", () => {
 12345  250K`;
 
 		expect(parseTopMemory(output, timestamp)).toEqual([]);
+	});
+});
+
+describe("parseDevicectlMemory", () => {
+	const timestamp = 1700000000000;
+
+	const sampleJson = JSON.stringify({
+		result: {
+			runningProcesses: [
+				{
+					processIdentifier: 12345,
+					executable: "/private/var/containers/Bundle/Application/.../MyApp.app/MyApp",
+					memoryUse: 262144000, // ~250 MB
+				},
+				{
+					processIdentifier: 99,
+					executable: "/usr/sbin/syslogd",
+					memoryUse: 5242880,
+				},
+			],
+		},
+	});
+
+	test("parses memory for matching PID", () => {
+		const samples = parseDevicectlMemory(sampleJson, 12345, timestamp);
+
+		expect(samples).toHaveLength(1);
+		expect(samples[0].type).toBe(MetricType.MEMORY);
+		expect(samples[0].value).toBe(250);
+		expect(samples[0].unit).toBe("MB");
+		expect(samples[0].timestamp).toBe(timestamp);
+	});
+
+	test("returns empty array when PID not found", () => {
+		expect(parseDevicectlMemory(sampleJson, 99999, timestamp)).toEqual([]);
+	});
+
+	test("returns empty array for empty input", () => {
+		expect(parseDevicectlMemory("", 12345, timestamp)).toEqual([]);
+	});
+
+	test("returns empty array for malformed JSON", () => {
+		expect(parseDevicectlMemory("not json", 12345, timestamp)).toEqual([]);
+	});
+
+	test("returns empty array when memoryUse is missing", () => {
+		const json = JSON.stringify({
+			result: {
+				runningProcesses: [{ processIdentifier: 12345, executable: "MyApp" }],
+			},
+		});
+		expect(parseDevicectlMemory(json, 12345, timestamp)).toEqual([]);
+	});
+
+	test("returns empty array when memoryUse is zero", () => {
+		const json = JSON.stringify({
+			result: {
+				runningProcesses: [
+					{ processIdentifier: 12345, executable: "MyApp", memoryUse: 0 },
+				],
+			},
+		});
+		expect(parseDevicectlMemory(json, 12345, timestamp)).toEqual([]);
+	});
+
+	test("handles fractional MB values", () => {
+		const json = JSON.stringify({
+			result: {
+				runningProcesses: [
+					{ processIdentifier: 12345, executable: "MyApp", memoryUse: 157286400 },
+				],
+			},
+		});
+
+		const samples = parseDevicectlMemory(json, 12345, timestamp);
+		expect(samples).toHaveLength(1);
+		expect(samples[0].value).toBe(150);
 	});
 });
