@@ -3,6 +3,12 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_missing:
+        description: "Publish packages with unpublished versions"
+        type: boolean
+        default: false
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -42,3 +48,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish missing packages (manual recovery)
+        if: inputs.publish_missing == true
+        run: |
+          for pkg in packages/*; do
+            [ -f "$pkg/package.json" ] || continue
+            NAME=$(node -p "require('./$pkg/package.json').name")
+            VERSION=$(node -p "require('./$pkg/package.json').version")
+            PRIVATE=$(node -p "require('./$pkg/package.json').private || false")
+            [ "$PRIVATE" = "true" ] && continue
+            PUBLISHED=$(npm view "$NAME@$VERSION" version 2>/dev/null || echo "")
+            if [ -z "$PUBLISHED" ]; then
+              echo "Publishing $NAME@$VERSION..."
+              cd "$GITHUB_WORKSPACE/$pkg"
+              npm publish --access public --provenance
+              cd "$GITHUB_WORKSPACE"
+            else
+              echo "$NAME@$VERSION already on npm, skipping."
+            fi
+          done
